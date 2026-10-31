@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AD Sound And System | Sound Rental & Live Sound Engineering</title>
+  <meta name="description" content="AD Sound And System: professional sound system rental (JBL, British Acoustics, FANE, Midas, Yamaha, Soundcraft) for weddings, banquets, Garba and concerts, plus remote sound engineering for US, Canada & global events." />
+  <meta name="theme-color" content="#09090b" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <meta property="og:title" content="AD Sound And System" />
+  <meta property="og:description" content="Sound rental packages & international remote sound engineering." />
+  <meta property="og:image" content="assets/logo.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Hind+Vadodara:wght@400;500;600;700&family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { accent: '#f59e0b' }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } };
+  </script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .info-strip { max-height: 40px; transition: max-height .35s ease, opacity .3s; overflow: hidden; }
+    #siteHeader.is-scrolled .info-strip { max-height: 0; opacity: 0; }
+  </style>
+</head>
+<body class="grain text-zinc-200 font-sans antialiased overflow-x-hidden">
+
+  <!-- Preloader -->
+  <div id="preloader" aria-hidden="true">
+    <img src="assets/logo-mark-white.png" alt="" class="pre-logo" />
+    <div class="flex items-baseline gap-1"><span id="preCount">0</span><span class="text-zinc-500 font-display text-xl">%</span></div>
+    <p class="text-[10px] tracking-[0.4em] text-zinc-500 uppercase">AD Sound &amp; System</p>
+  </div>
+  <div id="scrollProgress"></div>
+
+  <!-- Header -->
+  <header id="siteHeader" class="fixed top-0 inset-x-0 z-50">
+    <div class="info-strip border-b border-zinc-800/60 bg-black/40 text-[11px] sm:text-xs text-zinc-400">
+      <div class="max-w-7xl mx-auto px-4 h-9 flex items-center justify-between gap-4">
+        <span class="truncate"><span class="text-zinc-200 font-medium" data-i18n="strip.names">Dilipbhai Dave &amp; Aniket Dave</span><span class="hidden sm:inline" data-i18n="strip.role"> · Proprietors</span></span>
+        <div class="flex gap-4 shrink-0">
+          <a href="tel:+918320330558" class="hover:text-accent">+91 8320330558</a>
+          <a href="mailto:adsoundandsystem@gmail.com" class="hover:text-accent hidden md:inline">adsoundandsystem@gmail.com</a>
+        </div>
+      </div>
+    </div>
+    <nav class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <a href="#hero" class="flex items-center gap-3 min-w-0">
+        <img src="assets/logo-mark-white.png" alt="" class="h-9 w-9 shrink-0" />
+        <span class="font-display text-lg sm:text-xl font-semibold tracking-wide text-white truncate hidden min-[400px]:inline">AD SOUND &amp; SYSTEM</span>
+      </a>
+      <div class="hidden xl:flex items-center gap-6 text-sm text-zinc-300">
+        <a href="#experiences" class="hover:text-white" data-i18n="nav.events">Events</a>
+        <a href="#visualizer" class="hover:text-white" data-i18n="nav.setups">3D Setups</a>
+        <a href="#packages" class="hover:text-white" data-i18n="nav.packages">Packages</a>
+        <a href="#estimator" class="hover:text-white" data-i18n="nav.estimator">Estimator</a>
+        <a href="#international" class="hover:text-white" data-i18n="nav.intl">International</a>
+        <a href="#faq" class="hover:text-white" data-i18n="nav.faq">FAQ</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="lang-switch" role="group" aria-label="Language / ભાષા / भाषा">
+          <button type="button" data-lang="en" aria-pressed="true" lang="en">EN</button>
+          <button type="button" data-lang="gu" aria-pressed="false" lang="gu" title="ગુજરાતી">ગુ</button>
+          <button type="button" data-lang="hi" aria-pressed="false" lang="hi" title="हिन्दी">हि</button>
+        </div>
+        <a href="#inquiry" class="btn btn-primary btn-sm magnetic hidden sm:inline-flex" data-i18n="nav.quote">Get a Quote</a>
+        <button id="menuBtn" class="xl:hidden btn btn-ghost btn-sm" aria-label="Open menu" aria-expanded="false">☰</button>
+      </div>
+    </nav>
+    <div id="mobileMenu" class="hidden xl:hidden border-t border-zinc-800 bg-[#09090b]/95 backdrop-blur px-4 py-4 flex flex-col gap-4 text-base">
+      <a href="#experiences" data-i18n="nav.events">Events</a>
+      <a href="#visualizer" data-i18n="nav.setups">3D Setups</a>
+      <a href="#packages" data-i18n="nav.packages">Packages</a>
+      <a href="#estimator" data-i18n="nav.estimator">Estimator</a>
+      <a href="#international" data-i18n="nav.intl">International</a>
+      <a href="#faq" data-i18n="nav.faq">FAQ</a>
+      <a href="#inquiry" class="btn btn-primary" data-i18n="nav.quote">Get a Quote</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section id="hero" class="relative flex items-center overflow-hidden">
+      <div id="heroCanvas" aria-hidden="true"></div>
+      <div class="hero-vignette absolute inset-0 pointer-events-none"></div>
+      <div id="heroContent" class="relative w-full max-w-7xl mx-auto px-4 pt-36 pb-28">
+        <div data-hero class="flex items-center gap-3 mb-6 text-accent">
+          <span class="eq-live"><span></span><span></span><span></span><span></span><span></span><span></span></span>
+          <span class="text-[11px] sm:text-xs uppercase tracking-[0.3em] font-semibold" data-i18n="hero.kicker">Sound Rental · Live Engineering</span>
+        </div>
+        <h1 class="font-display font-bold text-white leading-[1.02] text-[12vw] sm:text-7xl lg:text-8xl xl:text-[7.5rem] max-w-5xl">
+          <span id="heroTitle" class="block" data-i18n="hero.t1">Sound that moves</span>
+          <span data-hero class="block text-gradient" data-i18n="hero.t2">every crowd.</span>
+        </h1>
+        <p data-hero class="mt-7 text-zinc-300/90 text-lg sm:text-xl max-w-2xl" data-i18n="hero.sub">
+          JBL, British Acoustics &amp; FANE speakers driven by Midas, Yamaha &amp; Soundcraft consoles, from intimate banquets to 3,000+ Garba arenas. Engineered remotely for the US, Canada and beyond.
+        </p>
+        <div data-hero class="mt-9 flex flex-wrap items-center gap-3">
+          <a href="#estimator" class="btn btn-primary magnetic !px-6 !py-3.5 !rounded-full" data-i18n="hero.cta">Estimate my event →</a>
+          <button type="button" data-sound-toggle aria-pressed="false" class="sound-btn btn btn-ghost magnetic !px-5 !py-3.5 !rounded-full bg-black/30 backdrop-blur">
+            <span class="eq-live text-accent"><span></span><span></span><span></span><span></span></span>
+            <span data-sound-label data-i18n="sound.on">Feel the sound</span>
+          </button>
+        </div>
+        <dl data-hero class="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-3xl">
+          <div><dt class="text-xs text-zinc-500 uppercase tracking-wider" data-i18n="stat.audience">Audience</dt><dd class="font-display text-3xl sm:text-4xl text-white"><span data-count="3000" data-suffix="+">3,000+</span></dd></div>
+          <div><dt class="text-xs text-zinc-500 uppercase tracking-wider" data-i18n="stat.line">Line array</dt><dd class="font-display text-3xl sm:text-4xl text-white"><span data-count="16">16</span> <span class="text-base text-zinc-500" data-i18n="stat.modules">modules</span></dd></div>
+          <div><dt class="text-xs text-zinc-500 uppercase tracking-wider" data-i18n="stat.consoles">Consoles up to</dt><dd class="font-display text-3xl sm:text-4xl text-white"><span data-count="32">32</span> <span class="text-base text-zinc-500" data-i18n="stat.ch">ch</span></dd></div>
+          <div><dt class="text-xs text-zinc-500 uppercase tracking-wider" data-i18n="stat.remote">Remote</dt><dd class="font-display text-3xl sm:text-4xl text-white">US · CA</dd></div>
+        </dl>
+      </div>
+      <a href="#brands" class="absolute bottom-7 left-1/2 -translate-x-1/2" aria-label="Scroll down"><span class="scroll-cue block"></span></a>
+    </section>
+
+    <!-- Brand marquee -->
+    <section id="brands" class="py-16 border-y border-zinc-800/70 bg-[#0b0b0e]">
+      <div class="max-w-7xl mx-auto px-4 mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <p class="section-kicker" data-i18n="brands.kicker">Our Inventory</p>
+          <h2 class="font-display text-3xl sm:text-4xl text-white mt-3" data-i18n="brands.title">World-class brands, every show.</h2>
+        </div>
+        <div class="flex gap-2"><span class="badge" data-i18n="brands.badge">🔊 Speakers: JBL · British Acoustics · FANE</span></div>
+      </div>
+      <div class="marquee" aria-label="Speaker brands"><div class="marquee-track" id="marqueeSpeakers"></div></div>
+      <div class="marquee marquee-reverse mt-2" aria-label="Mixer brands"><div class="marquee-track" id="marqueeMixers"></div></div>
+      <div class="max-w-7xl mx-auto px-4 mt-10 grid md:grid-cols-2 gap-6" data-stagger>
+        <div class="glow-card p-6" data-tilt>
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="font-display text-xl text-white" data-i18n="brands.spk">Loudspeakers, Tops &amp; Subwoofers</h3>
+            <span class="badge" data-i18n="brands.spkBadge">🔊 Speakers</span>
+          </div>
+          <div id="speakerBrands" class="grid grid-cols-3 gap-3"></div>
+        </div>
+        <div class="glow-card p-6" data-tilt>
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="font-display text-xl text-white" data-i18n="brands.mix">Digital &amp; Analog Mixing Consoles</h3>
+            <span class="badge" data-i18n="brands.mixBadge">🎚️ Mixers</span>
+          </div>
+          <div id="mixerBrands" class="grid grid-cols-3 gap-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Experiences bento -->
+    <section id="experiences" class="max-w-7xl mx-auto px-4 py-24">
+      <div class="max-w-2xl mb-12" data-reveal>
+        <p class="section-kicker" data-i18n="exp.kicker">Events we power</p>
+        <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="exp.title">Built for the moments people remember.</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4" data-stagger>
+        <article class="bento-tile p-7 flex flex-col justify-end lg:col-span-2 lg:row-span-2 min-h-[320px] cursor-pointer" data-tilt data-view3d="navratri">
+          <div class="bento-bg" style="background: radial-gradient(80% 70% at 80% 10%, rgba(245,158,11,.55), transparent 60%), radial-gradient(60% 60% at 0% 100%, rgba(236,72,153,.35), transparent 60%)"></div>
+          <span class="bento-icon">💃</span>
+          <h3 class="font-display text-3xl sm:text-4xl text-white mt-4" data-i18n="exp.garba.t">Garba &amp; Navratri Arenas</h3>
+          <p class="text-zinc-300 mt-2 max-w-md" data-i18n="exp.garba.d">Flying line arrays and cardioid subs that keep 3,000+ dancers on the beat for nine nights, with dhol and vocals tuned to cut through.</p>
+        </article>
+        <article class="bento-tile p-6 flex flex-col justify-end lg:col-span-2 cursor-pointer" data-tilt data-view3d="banquet">
+          <div class="bento-bg" style="background: radial-gradient(70% 90% at 100% 0%, rgba(251,191,36,.4), transparent 60%)"></div>
+          <span class="bento-icon">💍</span>
+          <h3 class="font-display text-2xl text-white mt-3" data-i18n="exp.wed.t">Weddings, Sangeet &amp; Receptions</h3>
+          <p class="text-zinc-400 text-sm mt-1" data-i18n="exp.wed.d">Crystal-clear vows, punchy sangeet nights and elegant receptions.</p>
+        </article>
+        <article class="bento-tile p-6 flex flex-col justify-end cursor-pointer" data-tilt data-view3d="concert">
+          <div class="bento-bg" style="background: radial-gradient(90% 90% at 100% 0%, rgba(96,165,250,.45), transparent 60%)"></div>
+          <span class="bento-icon">🎤</span>
+          <h3 class="font-display text-2xl text-white mt-3" data-i18n="exp.concert.t">Concerts &amp; Live Shows</h3>
+        </article>
+        <article class="bento-tile p-6 flex flex-col justify-end cursor-pointer" data-tilt data-view3d="compact">
+          <div class="bento-bg" style="background: radial-gradient(90% 90% at 100% 0%, rgba(34,197,94,.35), transparent 60%)"></div>
+          <span class="bento-icon">🏢</span>
+          <h3 class="font-display text-2xl text-white mt-3" data-i18n="exp.corp.t">Corporate &amp; Conferences</h3>
+        </article>
+        <article class="bento-tile p-6 flex flex-col justify-end lg:col-span-2" data-tilt>
+          <div class="bento-bg" style="background: radial-gradient(70% 90% at 100% 0%, rgba(168,85,247,.4), transparent 60%)"></div>
+          <span class="bento-icon">🪔</span>
+          <h3 class="font-display text-2xl text-white mt-3" data-i18n="exp.rel.t">Religious &amp; Social Functions</h3>
+          <p class="text-zinc-400 text-sm mt-1" data-i18n="exp.rel.d">Katha, satsang, bhajan sandhya and community gatherings, clear speech for every row.</p>
+        </article>
+        <article class="bento-tile p-6 flex flex-col justify-end lg:col-span-2" data-tilt>
+          <div class="bento-bg" style="background: radial-gradient(70% 90% at 100% 0%, rgba(14,165,233,.45), transparent 60%)"></div>
+          <span class="bento-icon">🌍</span>
+          <h3 class="font-display text-2xl text-white mt-3" data-i18n="exp.abroad.t">Festivals Abroad: US · Canada</h3>
+          <p class="text-zinc-400 text-sm mt-1" data-i18n="exp.abroad.d">Show files and live virtual supervision for overseas organisers.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 3D Visualizer -->
+    <section id="visualizer" class="border-t border-zinc-800/70 bg-[#0b0b0e]">
+      <div class="max-w-7xl mx-auto px-4 py-24">
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+          <div data-reveal>
+            <p class="section-kicker" data-i18n="viz.kicker">Interactive 3D</p>
+            <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="viz.title">See the setup before the show.</h2>
+            <p class="text-zinc-400 mt-3 max-w-2xl" data-i18n="viz.sub">Drag to orbit, scroll or pinch to zoom. Switch camera views, and tap <em>Feel the sound</em> to make the rig pump to the beat.</p>
+          </div>
+          <div role="tablist" class="flex flex-wrap gap-2" id="vizTabs" data-reveal="right">
+            <button role="tab" class="viz-tab btn btn-ghost btn-sm !rounded-full" data-setup="compact" aria-selected="true" data-i18n="viz.tab.compact">2-Panel Compact</button>
+            <button role="tab" class="viz-tab btn btn-ghost btn-sm !rounded-full" data-setup="banquet" aria-selected="false" data-i18n="viz.tab.banquet">4-Panel Banquet</button>
+            <button role="tab" class="viz-tab btn btn-ghost btn-sm !rounded-full" data-setup="concert" aria-selected="false" data-i18n="viz.tab.concert">Line Array · Concert</button>
+            <button role="tab" class="viz-tab btn btn-ghost btn-sm !rounded-full" data-setup="navratri" aria-selected="false" data-i18n="viz.tab.navratri">Line Array · Navratri</button>
+          </div>
+        </div>
+        <div class="grid lg:grid-cols-[1fr_340px] gap-6" data-reveal="scale">
+          <div class="glow-card overflow-hidden relative">
+            <div id="viz" data-lenis-prevent class="h-[420px] sm:h-[520px] lg:h-[600px] w-full"></div>
+            <div id="vizFallback" class="hidden absolute inset-0 flex items-center justify-center text-center p-8 text-zinc-400" data-i18n="viz.fallback">
+              3D preview needs WebGL, which is unavailable in this browser.
+            </div>
+            <div class="absolute top-3 left-3 right-3 flex flex-wrap gap-2">
+              <button id="vizPlay" class="btn btn-ghost btn-sm bg-black/60 backdrop-blur" aria-pressed="true">❚❚ Pause</button>
+              <button id="vizReset" class="btn btn-ghost btn-sm bg-black/60 backdrop-blur" data-i18n="viz.reset">⟲ Reset view</button>
+              <button type="button" data-sound-toggle aria-pressed="false" class="sound-btn btn btn-ghost btn-sm bg-black/60 backdrop-blur">
+                <span class="eq-live text-accent !h-4"><span></span><span></span><span></span></span><span data-sound-label data-i18n="sound.on">Feel the sound</span>
+              </button>
+            </div>
+            <div id="vizViews" class="absolute bottom-3 left-3 flex flex-wrap gap-2" role="group" aria-label="Camera">
+              <button class="chip !py-1.5 bg-black/60 backdrop-blur" data-view="audience" aria-pressed="true" data-i18n="viz.view.audience">👥 Audience</button>
+              <button class="chip !py-1.5 bg-black/60 backdrop-blur" data-view="stage" aria-pressed="false" data-i18n="viz.view.stage">🎤 Stage</button>
+              <button class="chip !py-1.5 bg-black/60 backdrop-blur" data-view="aerial" aria-pressed="false" data-i18n="viz.view.aerial">🚁 Aerial</button>
+            </div>
+          </div>
+          <aside id="vizInfo" class="glow-card p-6"></aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- Packages -->
+    <section id="packages" class="max-w-7xl mx-auto px-4 py-24">
+      <div class="mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-4" data-reveal>
+        <div>
+          <p class="section-kicker" data-i18n="pkg.kicker">Physical Rental · India Inventory</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="pkg.title">Pick your power.</h2>
+        </div>
+        <p class="text-zinc-400 max-w-md" data-i18n="pkg.sub">Three proven rigs, scaled from 150 to 3,000+ guests. Every package is fully customisable in your estimate.</p>
+      </div>
+      <div id="packageGrid" class="grid md:grid-cols-3 gap-6" data-stagger></div>
+    </section>
+
+    <!-- Estimator -->
+    <section id="estimator" class="border-y border-zinc-800/70 bg-[#0b0b0e] relative overflow-hidden">
+      <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(50% 60% at 85% 20%, rgba(245,158,11,.10), transparent 70%)"></div>
+      <div class="relative max-w-7xl mx-auto px-4 py-24">
+        <div class="max-w-2xl mb-12" data-reveal>
+          <p class="section-kicker" data-i18n="est.kicker">Instant Estimator</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="est.title">Know your budget in seconds.</h2>
+          <p class="text-zinc-400 mt-3" data-i18n="est.sub">Slide to match your event. We'll recommend a rig and show a ballpark range; your exact quote follows within hours.</p>
+        </div>
+        <div class="grid lg:grid-cols-[1.25fr_1fr] gap-6">
+          <div class="glow-card p-6 sm:p-8 space-y-8" data-reveal="left">
+            <div role="radiogroup" aria-label="Event location" class="flex flex-wrap gap-2" id="estMode">
+              <button type="button" class="chip" data-mode="india" aria-pressed="true" data-i18n="est.india">🇮🇳 Rental in India</button>
+              <button type="button" class="chip" data-mode="intl" aria-pressed="false" data-i18n="est.intl">🌍 Remote · US / Canada</button>
+            </div>
+
+            <div id="estIndia" class="space-y-8">
+              <div>
+                <div class="flex justify-between text-sm mb-3"><label for="estGuests" class="text-zinc-400" data-i18n="est.guests">Expected guests</label><span class="font-display text-xl text-white" id="estGuestsOut">300</span></div>
+                <input id="estGuests" type="range" class="range" min="50" max="3000" step="50" value="300" />
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-3"><label for="estDays" class="text-zinc-400" data-i18n="est.days">Days</label><span class="font-display text-xl text-white" id="estDaysOut">1</span></div>
+                <input id="estDays" type="range" class="range" min="1" max="10" step="1" value="1" />
+              </div>
+              <div>
+                <p class="text-sm text-zinc-400 mb-3" data-i18n="est.addons">Add-ons</p>
+                <div class="flex flex-wrap gap-2" id="estAddons"></div>
+              </div>
+            </div>
+
+            <div id="estIntl" class="space-y-8 hidden">
+              <div>
+                <p class="text-sm text-zinc-400 mb-3" data-i18n="est.services">Services</p>
+                <div class="flex flex-wrap gap-2" id="estServices"></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-3"><label for="estNights" class="text-zinc-400" data-i18n="est.nights">Nights of live supervision</label><span class="font-display text-xl text-white" id="estNightsOut">9</span></div>
+                <input id="estNights" type="range" class="range" min="1" max="15" step="1" value="9" />
+              </div>
+              <div role="radiogroup" aria-label="Currency" class="flex gap-2" id="estCurrency">
+                <button type="button" class="chip" data-cur="USD" aria-pressed="true">USD $</button>
+                <button type="button" class="chip" data-cur="CAD" aria-pressed="false">CAD $</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="glow-card p-6 sm:p-8 flex flex-col" data-reveal="right" aria-live="polite">
+            <p class="text-xs uppercase tracking-widest text-zinc-500" data-i18n="est.rec">Recommended</p>
+            <h3 id="estName" class="font-display text-3xl text-white mt-1">-</h3>
+            <p id="estSub" class="text-sm text-zinc-400 mt-1"></p>
+            <p class="text-xs uppercase tracking-widest text-zinc-500 mt-8" data-i18n="est.budget">Estimated budget</p>
+            <p id="estTotal" class="font-display text-4xl sm:text-5xl text-accent mt-1 leading-tight">-</p>
+            <ul id="estBreakdown" class="mt-6 space-y-2 text-sm text-zinc-300 flex-1"></ul>
+            <p class="text-[11px] text-zinc-500 mt-6" data-i18n="est.disc">Indicative only, based on published base rates. Taxes, transport distance and venue needs are confirmed in your official estimate.</p>
+            <button id="estCta" class="btn btn-primary magnetic mt-5 !py-3.5 !rounded-full" data-i18n="est.cta">Get my exact quote →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- International -->
+    <section id="international" class="max-w-7xl mx-auto px-4 py-24">
+      <div class="grid lg:grid-cols-[380px_1fr] gap-10">
+        <div data-reveal="left">
+          <p class="section-kicker" data-i18n="intl.kicker">US · Canada · Global</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="intl.title">Your engineer, anywhere on Earth.</h2>
+          <p class="text-zinc-400 mt-4" data-i18n="intl.sub">Navratri, Garba and cultural festivals abroad need engineers who know how a dhol should sit in the mix. We programme your console and supervise your local crew in real time, wherever the venue is.</p>
+          <div class="flex flex-wrap gap-2 mt-6">
+            <span class="badge" data-i18n="intl.us">🇺🇸 United States</span><span class="badge" data-i18n="intl.ca">🇨🇦 Canada</span><span class="badge" data-i18n="intl.global">🌍 Global</span>
+          </div>
+        </div>
+        <div id="serviceGrid" class="grid md:grid-cols-2 gap-6" data-stagger></div>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="border-t border-zinc-800/70 bg-[#0b0b0e]">
+      <div class="max-w-7xl mx-auto px-4 py-24">
+        <div class="max-w-2xl mb-14" data-reveal>
+          <p class="section-kicker" data-i18n="proc.kicker">How it works</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="proc.title">From first call to final song.</h2>
+        </div>
+        <div class="relative">
+          <div class="hidden md:block absolute top-[26px] left-[26px] right-[26px] h-px bg-zinc-800"></div>
+          <div id="processLine" class="hidden md:block absolute top-[26px] left-[26px] right-[26px] h-px bg-gradient-to-r from-accent to-sky-400 origin-left"></div>
+          <ol class="grid md:grid-cols-5 gap-8" data-stagger>
+            <li><div class="step-dot">01</div><h3 class="font-display text-xl text-white mt-5" data-i18n="proc.1.t">Inquiry</h3><p class="text-sm text-zinc-400 mt-1" data-i18n="proc.1.d">Share your date, venue and crowd size online or on WhatsApp.</p></li>
+            <li><div class="step-dot">02</div><h3 class="font-display text-xl text-white mt-5" data-i18n="proc.2.t">Branded estimate</h3><p class="text-sm text-zinc-400 mt-1" data-i18n="proc.2.d">An itemised PDF quote with gear, days and total.</p></li>
+            <li><div class="step-dot">03</div><h3 class="font-display text-xl text-white mt-5" data-i18n="proc.3.t">Plan &amp; confirm</h3><p class="text-sm text-zinc-400 mt-1" data-i18n="proc.3.d">Venue layout, power and timings locked with a 50% advance.</p></li>
+            <li><div class="step-dot">04</div><h3 class="font-display text-xl text-white mt-5" data-i18n="proc.4.t">Setup &amp; tune</h3><p class="text-sm text-zinc-400 mt-1" data-i18n="proc.4.d">Rigging, DSP alignment and soundcheck before guests arrive.</p></li>
+            <li><div class="step-dot">05</div><h3 class="font-display text-xl text-white mt-5" data-i18n="proc.5.t">Showtime</h3><p class="text-sm text-zinc-400 mt-1" data-i18n="proc.5.d">Live mixing through the event, then a clean pack-down.</p></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary table -->
+    <section class="max-w-7xl mx-auto px-4 py-20">
+      <h2 class="font-display text-3xl sm:text-4xl text-white mb-8" data-reveal data-i18n="sum.title">Package &amp; service summary</h2>
+      <div class="glow-card overflow-x-auto" data-reveal>
+        <table class="w-full text-sm min-w-[640px]">
+          <thead class="text-left text-zinc-400 border-b border-zinc-800">
+            <tr><th class="p-4 font-medium" data-i18n="sum.h1">Package / Service</th><th class="p-4 font-medium" data-i18n="sum.h2">Capacity / Target</th><th class="p-4 font-medium" data-i18n="sum.h3">Brands / Key Gear</th><th class="p-4 font-medium" data-i18n="sum.h4">Pricing</th></tr>
+          </thead>
+          <tbody id="summaryBody" class="divide-y divide-zinc-800/80"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="border-t border-zinc-800/70 bg-[#0b0b0e]">
+      <div class="max-w-7xl mx-auto px-4 py-24 grid lg:grid-cols-[1fr_1.4fr] gap-12">
+        <div data-reveal="left">
+          <p class="section-kicker" data-i18n="faq.kicker">FAQ</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="faq.title">Good questions.</h2>
+          <p class="text-zinc-400 mt-3" data-i18n="faq.sub">Anything else? Call or WhatsApp <a href="tel:+918320330558" class="text-white hover:text-accent">+91 8320330558</a>.</p>
+        </div>
+        <div id="faqList" data-reveal="right"></div>
+      </div>
+    </section>
+
+    <!-- Inquiry -->
+    <section id="inquiry" class="max-w-7xl mx-auto px-4 py-24">
+      <div class="grid lg:grid-cols-[1fr_1.3fr] gap-10">
+        <div data-reveal="left">
+          <p class="section-kicker" data-i18n="inq.kicker">Free Estimate</p>
+          <h2 class="font-display text-4xl sm:text-5xl text-white mt-3" data-i18n="inq.title">Tell us about your event.</h2>
+          <p class="text-zinc-400 mt-4" data-i18n="inq.sub">Share the date, venue and crowd size. We'll reply with a branded estimate itemising equipment, days and total. Send it straight to us on WhatsApp or email after submitting.</p>
+          <div id="contact" class="glow-card p-6 mt-8 space-y-4">
+            <div>
+              <p class="text-xs text-zinc-500" data-i18n="c.prop">Proprietors</p>
+              <p class="text-white font-medium" data-i18n="strip.names">Dilipbhai Dave &amp; Aniket Dave</p>
+            </div>
+            <div>
+              <p class="text-xs text-zinc-500" data-i18n="c.phone">Phone / WhatsApp</p>
+              <a href="tel:+918320330558" class="text-white font-medium hover:text-accent">+91 8320330558</a>
+            </div>
+            <div>
+              <p class="text-xs text-zinc-500" data-i18n="c.email">Email</p>
+              <a href="mailto:adsoundandsystem@gmail.com" class="text-white font-medium hover:text-accent break-all">adsoundandsystem@gmail.com</a>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <a class="btn btn-primary btn-sm magnetic" target="_blank" rel="noopener" href="https://wa.me/918320330558" data-i18n="c.wa">WhatsApp us</a>
+              <a class="btn btn-ghost btn-sm magnetic" href="tel:+918320330558" data-i18n="c.call">Call now</a>
+            </div>
+          </div>
+        </div>
+
+        <form id="inquiryForm" class="glow-card p-6 sm:p-8 grid sm:grid-cols-2 gap-4" novalidate data-reveal="right">
+          <label class="text-sm"><span data-i18n="f.name">Full name *</span>
+            <input name="name" class="field mt-1" required autocomplete="name" />
+          </label>
+          <label class="text-sm"><span data-i18n="f.phone">Phone / WhatsApp *</span>
+            <input name="phone" class="field mt-1" required type="tel" autocomplete="tel" placeholder="+91 …" />
+          </label>
+          <label class="text-sm"><span data-i18n="f.email">Email</span>
+            <input name="email" class="field mt-1" type="email" autocomplete="email" />
+          </label>
+          <label class="text-sm"><span data-i18n="f.location">City / Country *</span>
+            <input name="location" class="field mt-1" required placeholder="e.g. Ahmedabad, India" data-i18n-ph="ph.location" />
+          </label>
+          <label class="sm:col-span-2 text-sm"><span data-i18n="f.package">Package / Service *</span>
+            <select name="packageId" id="packageSelect" class="field mt-1" required></select>
+          </label>
+          <label class="text-sm"><span data-i18n="f.type">Event type</span>
+            <select name="eventType" id="eventTypeSelect" class="field mt-1"></select>
+          </label>
+          <label class="text-sm"><span data-i18n="f.date">Event start date *</span>
+            <input name="eventDate" class="field mt-1" type="date" required />
+          </label>
+          <label class="text-sm"><span data-i18n="f.days">Number of days / nights</span>
+            <input name="days" class="field mt-1" type="number" min="1" max="60" value="1" />
+          </label>
+          <label class="text-sm"><span data-i18n="f.guests">Expected guests</span>
+            <input name="guests" class="field mt-1" type="number" min="1" placeholder="e.g. 300" data-i18n-ph="ph.guests" />
+          </label>
+          <label class="sm:col-span-2 text-sm"><span data-i18n="f.venue">Venue</span>
+            <input name="venue" class="field mt-1" placeholder="Venue name / address" data-i18n-ph="ph.venue" />
+          </label>
+          <label class="sm:col-span-2 text-sm"><span data-i18n="f.message">Message</span>
+            <textarea name="message" rows="3" class="field mt-1" placeholder="Indoor/outdoor, live band, DJ, special requirements…" data-i18n-ph="ph.message"></textarea>
+          </label>
+          <p id="formError" class="sm:col-span-2 text-sm text-red-400 hidden"></p>
+          <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+            <button class="btn btn-primary magnetic !rounded-full !px-6 !py-3" type="submit" data-i18n="f.submit">Submit inquiry →</button>
+            <span class="text-xs text-zinc-500" data-i18n="f.req">* required</span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Inquiry success dialog -->
+  <div id="successModal" class="hidden fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="glow-card max-w-md w-full p-6">
+      <h3 id="successTitle" class="font-display text-2xl text-white" data-i18n="ok.title">Inquiry saved ✓</h3>
+      <p class="text-zinc-400 mt-2 text-sm"><span data-i18n="ok.ref">Reference</span> <span id="successRef" class="text-white font-mono"></span>. <span data-i18n="ok.send">Send it to us now so we can prepare your estimate:</span></p>
+      <div class="mt-5 grid gap-2">
+        <a id="successWa" target="_blank" rel="noopener" class="btn btn-primary" data-i18n="ok.wa">Send on WhatsApp</a>
+        <a id="successMail" class="btn btn-ghost" data-i18n="ok.mail">Send by Email</a>
+        <button id="successClose" class="btn btn-ghost" data-i18n="ok.close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-800/70 bg-black overflow-hidden">
+    <div class="pt-20 pb-6">
+      <a href="#inquiry" class="block" aria-label="Book your sound">
+        <div id="bigWord" class="big-word text-center text-transparent [-webkit-text-stroke:1.5px_#3f3f46] hover:text-accent hover:[-webkit-text-stroke:1.5px_#f59e0b] transition-colors duration-500" data-i18n="foot.big">Let's make it loud</div>
+      </a>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 py-10 grid sm:grid-cols-[auto_1fr_auto] gap-6 items-center border-t border-zinc-900">
+      <img src="assets/logo-white.png" alt="AD Sound &amp; System" class="h-14 w-auto" />
+      <div class="text-sm text-zinc-500">
+        <p><span data-i18n="strip.names">Dilipbhai Dave &amp; Aniket Dave</span> · <a href="tel:+918320330558" class="hover:text-zinc-300">+91 8320330558</a> · <a href="mailto:adsoundandsystem@gmail.com" class="hover:text-zinc-300">adsoundandsystem@gmail.com</a></p>
+        <p class="mt-1">© <span id="year"></span> AD Sound And System. <span data-i18n="foot.rights">All rights reserved.</span></p>
+      </div>
+      <a href="admin.html" class="text-xs text-zinc-600 hover:text-zinc-400">Admin</a>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/918320330558" target="_blank" rel="noopener" class="fab-wa" aria-label="Chat on WhatsApp">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35M12.05 21.5h-.01a9.4 9.4 0 0 1-4.8-1.32l-.34-.2-3.57.94.95-3.48-.22-.36a9.4 9.4 0 0 1-1.45-5.03c0-5.2 4.24-9.44 9.45-9.44a9.38 9.38 0 0 1 9.44 9.45c0 5.21-4.24 9.44-9.45 9.44m8.04-17.48A11.3 11.3 0 0 0 12.05.7C5.78.7.68 5.8.68 12.06c0 2 .52 3.96 1.52 5.68L.58 23.7l6.1-1.6a11.33 11.33 0 0 0 5.37 1.37h.01c6.26 0 11.36-5.1 11.36-11.36 0-3.03-1.18-5.89-3.33-8.03"/></svg>
+  </a>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/hero.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/fx.js"></script>
+</body>
+</html>

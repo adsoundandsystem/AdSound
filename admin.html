@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin | AD Sound And System</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { accent: '#f59e0b' }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } };
+  </script>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="text-zinc-200 font-sans antialiased min-h-screen">
+
+  <!-- Login -->
+  <section id="loginView" class="min-h-screen flex items-center justify-center p-4 hero-glow">
+    <form id="loginForm" class="panel w-full max-w-sm p-8">
+      <img src="assets/logo-white.png" alt="AD Sound &amp; System" class="w-44 mx-auto" />
+      <h1 class="font-display text-2xl text-white text-center mt-6">Admin Panel</h1>
+      <p class="text-sm text-zinc-500 text-center mt-1">Inquiries &amp; estimation PDFs</p>
+      <label class="block text-sm mt-6">Password
+        <input id="password" type="password" class="field mt-1" autocomplete="current-password" required autofocus />
+      </label>
+      <p id="loginError" class="text-sm text-red-400 mt-2 hidden">Incorrect password.</p>
+      <button class="btn btn-primary w-full mt-5" type="submit">Sign in</button>
+      <a href="index.html" class="block text-center text-xs text-zinc-500 hover:text-zinc-300 mt-4">← Back to website</a>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="appView" class="hidden">
+    <header class="sticky top-0 z-30 bg-[#09090b]/90 backdrop-blur border-b border-zinc-800">
+      <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+        <a href="index.html" class="flex items-center gap-3 min-w-0">
+          <img src="assets/logo-mark-white.png" alt="" class="h-8 w-8" />
+          <span class="font-display text-lg text-white truncate">AD SOUND · ADMIN</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <button id="newInquiryBtn" class="btn btn-primary btn-sm">+ New inquiry</button>
+          <button id="logoutBtn" class="btn btn-ghost btn-sm">Sign out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+      <div id="stats" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+
+      <div class="panel mt-6">
+        <div class="p-4 flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between border-b border-zinc-800">
+          <div class="flex flex-col sm:flex-row gap-3 flex-1">
+            <input id="search" class="field sm:max-w-xs" placeholder="Search name, phone, ref, venue…" />
+            <div id="statusFilter" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="exportBtn" class="btn btn-ghost btn-sm">Export JSON</button>
+            <label class="btn btn-ghost btn-sm">Import JSON<input id="importInput" type="file" accept="application/json,.json" class="hidden" /></label>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[900px]">
+            <thead class="text-left text-zinc-500 text-xs uppercase tracking-wider">
+              <tr class="border-b border-zinc-800">
+                <th class="p-3 font-medium">Ref / Received</th>
+                <th class="p-3 font-medium">Customer</th>
+                <th class="p-3 font-medium">Package / Service</th>
+                <th class="p-3 font-medium">Event</th>
+                <th class="p-3 font-medium">Quote</th>
+                <th class="p-3 font-medium">Status</th>
+                <th class="p-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inquiryBody" class="divide-y divide-zinc-800/80"></tbody>
+          </table>
+        </div>
+        <p id="emptyState" class="hidden p-10 text-center text-zinc-500 text-sm"></p>
+      </div>
+      <p class="text-xs text-zinc-600 mt-4">Inquiries are stored in this browser's localStorage. Use Export / Import to back up or move them between devices.</p>
+    </main>
+  </section>
+
+  <!-- Quotation editor drawer -->
+  <div id="editorOverlay" class="hidden fixed inset-0 z-40 bg-black/60"></div>
+  <aside id="editor" class="drawer fixed top-0 right-0 z-50 h-full w-full max-w-4xl bg-[#0c0c0f] border-l border-zinc-800 translate-x-full overflow-y-auto" aria-hidden="true">
+    <div class="sticky top-0 z-10 bg-[#0c0c0f]/95 backdrop-blur border-b border-zinc-800 px-5 py-4 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <h2 class="font-display text-xl text-white">Quotation Builder</h2>
+        <p id="editorRef" class="text-xs text-zinc-500 truncate"></p>
+      </div>
+      <button id="editorClose" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+    </div>
+
+    <form id="quoteForm" class="qt p-5 space-y-6">
+      <section>
+        <h3 class="text-xs uppercase tracking-widest text-accent font-semibold mb-3">Customer &amp; Event</h3>
+        <div class="grid sm:grid-cols-3 gap-3 text-sm">
+          <label>Name<input data-c="name" class="mt-1" required /></label>
+          <label>Phone<input data-c="phone" class="mt-1" /></label>
+          <label>Email<input data-c="email" class="mt-1" /></label>
+          <label>Location<input data-c="location" class="mt-1" /></label>
+          <label>Event type<select data-c="eventType" id="qEventType" class="mt-1"></select></label>
+          <label>Event date<input data-c="eventDate" type="date" class="mt-1" /></label>
+          <label>Days<input data-c="days" type="number" min="1" class="mt-1" /></label>
+          <label>Guests<input data-c="guests" type="number" min="0" class="mt-1" /></label>
+          <label>Package label<input data-c="packageName" class="mt-1" /></label>
+          <label class="sm:col-span-3">Venue<input data-c="venue" class="mt-1" /></label>
+        </div>
+        <p id="customerMessage" class="hidden mt-3 text-sm text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-lg p-3"></p>
+      </section>
+
+      <section>
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
+          <h3 class="text-xs uppercase tracking-widest text-accent font-semibold">Line Items</h3>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <label class="flex items-center gap-2">Currency
+              <select id="qCurrency" class="!w-auto"></select>
+            </label>
+            <select id="qTemplate" class="!w-auto">
+              <option value="">Load template…</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto border border-zinc-800 rounded-lg">
+          <table class="w-full text-sm min-w-[720px]">
+            <thead class="text-xs text-zinc-500 bg-zinc-900/60">
+              <tr>
+                <th class="p-2 text-left font-medium">Description</th>
+                <th class="p-2 text-left font-medium w-44">Brand / Make</th>
+                <th class="p-2 text-right font-medium w-16">Qty</th>
+                <th class="p-2 text-right font-medium w-16">Days</th>
+                <th class="p-2 text-right font-medium w-28">Rate</th>
+                <th class="p-2 text-right font-medium w-28">Amount</th>
+                <th class="p-2 w-8"></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button type="button" id="addItem" class="btn btn-ghost btn-sm">+ Add line</button>
+          <select id="addAddon" class="!w-auto text-sm"></select>
+          <button type="button" id="syncDays" class="btn btn-ghost btn-sm" title="Set every line's Days to the event days">Apply event days to all</button>
+        </div>
+      </section>
+
+      <section class="grid md:grid-cols-[1fr_300px] gap-6">
+        <div class="space-y-3 text-sm">
+          <div class="grid grid-cols-3 gap-3">
+            <label>Discount type
+              <select id="qDiscountType" class="mt-1"><option value="percent">Percent (%)</option><option value="flat">Flat amount</option></select>
+            </label>
+            <label>Discount<input id="qDiscount" type="number" min="0" step="any" class="mt-1" /></label>
+            <label><span id="qTaxLabel">Tax</span> %<input id="qTax" type="number" min="0" step="any" class="mt-1" /></label>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <label>Quote no.<input id="qNo" class="mt-1" /></label>
+            <label>Quote date<input id="qDate" type="date" class="mt-1" /></label>
+            <label>Valid (days)<input id="qValid" type="number" min="1" class="mt-1" /></label>
+          </div>
+          <label class="block">Notes (shown on PDF)
+            <textarea id="qNotes" rows="2" class="mt-1"></textarea>
+          </label>
+          <label class="block">Terms &amp; conditions <span class="text-zinc-500">(one per line)</span>
+            <textarea id="qTerms" rows="7" class="mt-1 text-xs leading-relaxed"></textarea>
+          </label>
+          <button type="button" id="resetTerms" class="btn btn-ghost btn-sm">Reset to standard terms</button>
+        </div>
+        <div class="panel p-4 h-fit md:sticky md:top-24 space-y-2 text-sm" id="totals"></div>
+      </section>
+
+      <div class="sticky bottom-0 -mx-5 px-5 py-4 bg-[#0c0c0f]/95 backdrop-blur border-t border-zinc-800 flex flex-wrap gap-2 justify-end">
+        <button type="button" id="saveQuote" class="btn btn-ghost">Save</button>
+        <button type="button" id="previewPdf" class="btn btn-ghost">Preview PDF</button>
+        <button type="button" id="downloadPdf" class="btn btn-primary">Download PDF</button>
+      </div>
+    </form>
+  </aside>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/logo-data.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
