@@ -364,40 +364,257 @@
     return obj;
   }
 
-  // People: one lathe silhouette for trousers/kurta, one with a flared ghagra, plus a separate head for skin tone.
-  const bodyGeo = () =>
-    memo(geoCache, 'body', () => {
-      const pts = [[0, 0], [0.1, 0], [0.11, 0.08], [0.12, 0.5], [0.14, 0.82], [0.17, 0.96], [0.19, 1.2], [0.2, 1.36], [0.15, 1.44], [0.06, 1.49], [0.05, 1.55], [0, 1.56]].map(([x, y]) => new THREE.Vector2(x, y));
-      return new THREE.LatheGeometry(pts, 9).scale(1, 1, 0.68);
-    });
-  const skirtGeo = () =>
-    memo(geoCache, 'skirt', () => {
-      const pts = [[0, 0.02], [0.36, 0.02], [0.33, 0.12], [0.24, 0.5], [0.15, 0.86], [0.15, 0.96], [0.17, 1.18], [0.18, 1.34], [0.14, 1.42], [0.06, 1.48], [0.05, 1.54], [0, 1.55]].map(([x, y]) => new THREE.Vector2(x, y));
-      return new THREE.LatheGeometry(pts, 12).scale(1, 1, 0.8);
-    });
-  const headGeo = () => memo(geoCache, 'head', () => new THREE.SphereGeometry(0.105, 10, 8).scale(0.92, 1.08, 1).translate(0, 1.67, 0));
+  // ---------- People ----------
+  // Each outfit is built from low-poly parts merged into one geometry. A per-vertex `part` id picks
+  // which per-instance colour the vertex uses, so one draw call covers a whole crowd of that outfit.
+  const PART = { SKIN: 0, MAIN: 1, SECOND: 2, ACCENT: 3, HAIR: 4, GOLD: 5, LEATHER: 6 };
 
-  const PALETTE = {
-    casual: ['#1f2937', '#374151', '#1e3a8a', '#7f1d1d', '#e5e7eb', '#065f46', '#78350f', '#4b5563', '#f8fafc'],
-    formal: ['#f5f0e6', '#7f1d1d', '#a16207', '#1e3a8a', '#111827', '#be185d', '#065f46', '#d4af37', '#581c87'],
-    concert: ['#0f0f10', '#1c1c1f', '#27272a', '#1e293b', '#3f3f46', '#7f1d1d', '#e5e5e5', '#1e3a8a', '#52525b'],
-    garbaW: ['#dc2626', '#be123c', '#db2777', '#ea580c', '#f59e0b', '#16a34a', '#2563eb', '#9333ea', '#facc15', '#e11d48', '#0d9488'],
-    garbaM: ['#f8fafc', '#fde68a', '#fb923c', '#38bdf8', '#fef3c7', '#a3e635', '#f472b6', '#fbbf24'],
-    stage: ['#111111', '#7f1d1d', '#f8fafc', '#1e3a8a'],
+  function partGeo(geo, part, m) {
+    const g = geo.index ? geo.toNonIndexed() : geo.clone();
+    if (m) g.applyMatrix4(m);
+    Object.keys(g.attributes).forEach((n) => n !== 'position' && n !== 'normal' && g.deleteAttribute(n));
+    g.setAttribute('part', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count).fill(part), 1));
+    return g;
+  }
+
+  const T = (x, y, z, sx, sy, sz) => new THREE.Matrix4().compose(V3(x, y, z), new THREE.Quaternion(), V3(sx || 1, sy || sx || 1, sz || sx || 1));
+  const latheG = (pts, seg) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg || 10);
+
+  const addL = (fn, gm, part) => fn(gm[0], part, gm[1]);
+
+  // Tapered cylinder from a to b.
+  function limb(a, b, r0, r1) {
+    const d = b.clone().sub(a);
+    const g = new THREE.CylinderGeometry(r1 == null ? r0 : r1, r0, d.length(), 6, 1);
+    const m = new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(UP, d.clone().normalize()), V3(1, 1, 1));
+    return [g, m];
+  }
+
+  // Double-sided fabric strip (dupatta / pallu) following a curve around the body.
+  function ribbonGeo(points, width) {
+    const curve = new THREE.CatmullRomCurve3(points.map((p) => V3(p[0], p[1], p[2])));
+    const pos = [];
+    const n = 10;
+    const sideAt = (t) => {
+      const p = curve.getPoint(t);
+      const out = V3(p.x, 0, p.z).normalize();
+      return new THREE.Vector3().crossVectors(curve.getTangent(t), out).normalize().multiplyScalar(width / 2);
+    };
+    for (let i = 0; i < n; i++) {
+      const p0 = curve.getPoint(i / n), p1 = curve.getPoint((i + 1) / n);
+      const s0 = sideAt(i / n), s1 = sideAt((i + 1) / n);
+      const a = p0.clone().sub(s0), b = p0.clone().add(s0), c = p1.clone().add(s1), d = p1.clone().sub(s1);
+      [a, b, c, a, c, d, a, c, b, a, d, c].forEach((v) => pos.push(v.x, v.y, v.z));
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    return g;
+  }
+
+  // Arm poses: direction of upper arm and forearm in body space (+z is the front).
+  const POSES = {
+    down: (s) => [V3(s * 0.18, -1, 0.04), V3(s * 0.05, -1, 0.18)],
+    up: (s) => [V3(s * 0.4, 1, 0.15), V3(s * 0.12, 1, 0.08)],
+    garbaHigh: (s) => [V3(s * 0.55, 0.65, 0.3), V3(-s * 0.25, 1, 0.25)],
+    garbaLow: (s) => [V3(s * 0.45, -0.55, 0.35), V3(s * 0.1, 0.35, 1)],
+    dandiya: (s) => [V3(s * 0.3, -0.65, 0.4), V3(-s * 0.15, 0.6, 1)],
+    lap: (s) => [V3(s * 0.12, -1, 0.3), V3(-s * 0.05, -0.25, 1)],
   };
-  const SKIN = ['#8d5524', '#a0623a', '#c68642', '#b5784e', '#7c4a2b', '#d6a072'];
 
+  function arm(add, side, pose, shoulderY, sleeveUpper, sleeveFore, stick) {
+    const [d1, d2] = POSES[pose](side).map((v) => v.normalize());
+    const S = V3(side * 0.2, shoulderY, 0);
+    const E = S.clone().addScaledVector(d1, 0.28);
+    const W = E.clone().addScaledVector(d2, 0.25);
+    addL(add, limb(S, E, 0.048, 0.04), sleeveUpper);
+    addL(add, limb(E, W, 0.038, 0.032), sleeveFore);
+    add(new THREE.SphereGeometry(0.042, 6, 4), PART.SKIN, T(W.x + d2.x * 0.03, W.y + d2.y * 0.03, W.z + d2.z * 0.03));
+    if (stick) {
+      const H = W.clone().addScaledVector(d2, 0.04);
+      addL(add, limb(H.clone().addScaledVector(V3(-side * 0.15, 1, 0.35).normalize(), -0.08), H.clone().addScaledVector(V3(-side * 0.15, 1, 0.35).normalize(), 0.36), 0.013), PART.ACCENT);
+    }
+  }
+
+  function head(add, y, hair) {
+    add(new THREE.CylinderGeometry(0.045, 0.05, 0.1, 6), PART.SKIN, T(0, y - 0.13, 0));
+    add(new THREE.SphereGeometry(0.1, 8, 6), PART.SKIN, T(0, y, 0.005, 0.9, 1.1, 1));
+    if (hair === 'bun' || hair === 'long' || hair === 'short') add(new THREE.SphereGeometry(0.106, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.55), PART.HAIR, T(0, y + 0.012, -0.012, 0.92, 1.1, 1.02));
+    if (hair === 'bun') add(new THREE.SphereGeometry(0.055, 6, 5), PART.HAIR, T(0, y - 0.02, -0.105));
+    if (hair === 'long') add(new THREE.BoxGeometry(0.19, 0.3, 0.05), PART.HAIR, T(0, y - 0.15, -0.085));
+    if (hair === 'pagdi') {
+      add(new THREE.TorusGeometry(0.092, 0.045, 6, 12), PART.ACCENT, new THREE.Matrix4().compose(V3(0, y + 0.06, 0), new THREE.Quaternion().setFromAxisAngle(V3(1, 0, 0), Math.PI / 2), V3(1, 1.08, 1)));
+      add(new THREE.SphereGeometry(0.1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), PART.ACCENT, T(0, y + 0.07, 0, 0.95, 0.75, 1.05));
+    }
+  }
+
+  const torsoPts = [[0.17, 0.98], [0.18, 1.15], [0.2, 1.3], [0.195, 1.4], [0.11, 1.47], [0.05, 1.49]];
+  const choliPts = [[0.14, 1.04], [0.165, 1.18], [0.185, 1.32], [0.17, 1.4], [0.1, 1.46], [0.05, 1.48]];
+
+  function personGeo(kind) {
+    return memo(geoCache, 'person_' + kind, () => {
+      const parts = [];
+      const seated = /_seat$/.test(kind);
+      const k = kind.replace('_seat', '');
+      const drop = seated ? 0.44 : 0;
+      const lift = T(0, -drop, 0);
+      // Upper-body parts are authored standing and shifted down when seated.
+      const add = (g, part, m) => parts.push(partGeo(g, part, m ? lift.clone().multiply(m) : lift));
+      const addLow = (g, part, m) => parts.push(partGeo(g, part, m));
+      const legs = (part, r0, r1) => {
+        if (seated) {
+          [-1, 1].forEach((s) => {
+            addL(addLow, limb(V3(s * 0.09, 0.48, 0), V3(s * 0.1, 0.5, 0.44), r0 + 0.01, r0), part);
+            addL(addLow, limb(V3(s * 0.1, 0.5, 0.44), V3(s * 0.1, 0.07, 0.47), r0 - 0.005, r1), part);
+            addLow(new THREE.BoxGeometry(0.09, 0.06, 0.22), PART.LEATHER, T(s * 0.1, 0.03, 0.53));
+          });
+        } else {
+          [-1, 1].forEach((s) => {
+            addL(addLow, limb(V3(s * 0.085, 0.92, 0), V3(s * 0.09, 0.08, 0.02), r0, r1), part);
+            addLow(new THREE.BoxGeometry(0.09, 0.06, 0.22), PART.LEATHER, T(s * 0.09, 0.03, 0.06));
+          });
+        }
+      };
+      const shoulder = 1.4;
+
+      if (k === 'garbaW') {
+        // Chaniya choli: flared ghagra with gold borders, contrasting choli, dupatta across the body.
+        addLow(latheG([[0.43, 0.02], [0.41, 0.1], [0.34, 0.4], [0.24, 0.72], [0.15, 0.99]], 16), PART.MAIN);
+        addLow(latheG([[0.435, 0.015], [0.425, 0.12]], 16), PART.GOLD);
+        addLow(latheG([[0.345, 0.36], [0.335, 0.43]], 16), PART.GOLD);
+        add(latheG([[0.145, 0.98], [0.14, 1.05]], 10), PART.SKIN);
+        add(latheG(choliPts, 10), PART.SECOND, T(0, 0, 0, 1, 1, 0.78));
+        add(ribbonGeo([[-0.17, 1.43, 0.04], [-0.06, 1.3, 0.16], [0.08, 1.12, 0.17], [0.18, 0.98, 0.13]], 0.12), PART.ACCENT);
+        add(ribbonGeo([[-0.17, 1.43, 0.04], [-0.19, 1.34, -0.1], [-0.2, 1.02, -0.17], [-0.22, 0.72, -0.2]], 0.14), PART.ACCENT);
+        arm(add, 1, 'garbaHigh', shoulder, PART.SECOND, PART.SKIN);
+        arm(add, -1, 'garbaLow', shoulder, PART.SECOND, PART.SKIN);
+        head(add, 1.62, 'bun');
+      } else if (k === 'garbaM') {
+        // Kediyu (flared top with gold hem) over chorno, mojari, pagdi and dandiya sticks.
+        legs(PART.SECOND, 0.062, 0.05);
+        add(latheG([[0.29, 0.58], [0.27, 0.63], [0.22, 0.78], [0.17, 0.98]], 14), PART.MAIN);
+        add(latheG([[0.295, 0.565], [0.287, 0.625]], 14), PART.GOLD);
+        add(latheG(torsoPts, 10), PART.MAIN, T(0, 0, 0, 1, 1, 0.78));
+        add(latheG([[0.2, 1.3], [0.196, 1.38]], 10), PART.GOLD, T(0, 0, 0, 1, 1, 0.8));
+        arm(add, 1, 'dandiya', shoulder, PART.MAIN, PART.MAIN, true);
+        arm(add, -1, 'dandiya', shoulder, PART.MAIN, PART.MAIN, true);
+        head(add, 1.62, 'pagdi');
+      } else if (k === 'sareeW') {
+        if (seated) {
+          [-1, 1].forEach((s) => {
+            addL(addLow, limb(V3(s * 0.08, 0.48, 0), V3(s * 0.09, 0.5, 0.44), 0.11, 0.1), PART.MAIN);
+            addL(addLow, limb(V3(s * 0.09, 0.5, 0.44), V3(s * 0.09, 0.04, 0.47), 0.1, 0.12), PART.MAIN);
+          });
+          add(latheG([[0.2, 0.9], [0.155, 0.99]], 12), PART.MAIN);
+        } else {
+          addLow(latheG([[0.25, 0.02], [0.23, 0.3], [0.2, 0.7], [0.155, 0.99]], 12), PART.MAIN);
+          addLow(latheG([[0.255, 0.015], [0.245, 0.1]], 12), PART.GOLD);
+        }
+        add(latheG([[0.145, 0.98], [0.14, 1.05]], 10), PART.SKIN);
+        add(latheG(choliPts, 10), PART.SECOND, T(0, 0, 0, 1, 1, 0.78));
+        add(ribbonGeo([[0.17, 1.43, 0.04], [0.06, 1.26, 0.17], [-0.08, 1.08, 0.17], [-0.17, 0.95, 0.13]], 0.16), PART.MAIN);
+        add(ribbonGeo([[0.17, 1.43, 0.04], [0.19, 1.32, -0.1], [0.21, 1.0, -0.18], [0.22, 0.66, -0.2]], 0.2), PART.MAIN);
+        arm(add, 1, seated ? 'lap' : 'down', shoulder, PART.SECOND, PART.SKIN);
+        arm(add, -1, seated ? 'lap' : 'down', shoulder, PART.SECOND, PART.SKIN);
+        head(add, 1.62, 'bun');
+      } else if (k === 'kurtaM') {
+        legs(seated ? PART.MAIN : PART.SECOND, 0.065, 0.05);
+        if (!seated) add(latheG([[0.23, 0.5], [0.21, 0.66], [0.19, 0.88], [0.17, 0.98]], 12), PART.MAIN);
+        add(latheG(torsoPts, 10), PART.MAIN, T(0, 0, 0, 1, 1, 0.78));
+        arm(add, 1, seated ? 'lap' : 'down', shoulder, PART.MAIN, PART.MAIN);
+        arm(add, -1, seated ? 'lap' : 'down', shoulder, PART.MAIN, PART.MAIN);
+        head(add, 1.62, 'short');
+      } else {
+        // casualM / casualMUp / casualW: t-shirt or top and jeans.
+        const woman = k === 'casualW';
+        legs(PART.SECOND, woman ? 0.058 : 0.066, woman ? 0.045 : 0.052);
+        add(latheG([[0.17, 0.86], [0.18, 1.0]].concat(torsoPts.slice(1)), 10), PART.MAIN, T(0, 0, 0, woman ? 0.92 : 1, 1, 0.76));
+        const pose = k === 'casualMUp' ? 'up' : seated ? 'lap' : 'down';
+        arm(add, 1, pose, shoulder, PART.MAIN, PART.SKIN);
+        arm(add, -1, pose, shoulder, PART.MAIN, PART.SKIN);
+        head(add, 1.62, woman ? 'long' : 'short');
+      }
+      const g = THREE.BufferGeometryUtils.mergeBufferGeometries(parts);
+      parts.forEach((p) => p.dispose());
+      return g;
+    });
+  }
+
+  // Per-instance colours are injected into a standard material; PATTERN adds bandhani dots to the
+  // main garment and a woven stripe to the accent (dupatta / pagdi) for the Navratri crowd.
+  function personMaterial(pattern) {
+    return memo(matCache, 'personMat' + (pattern ? 'P' : ''), () => {
+      const m = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0, vertexColors: true, envMapIntensity: 0.35 });
+      if (pattern) m.defines = { PATTERN: '' };
+      m.customProgramCacheKey = () => 'person' + (pattern ? 'P' : '');
+      m.onBeforeCompile = (sh) => {
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nattribute float part; attribute vec3 iMain; attribute vec3 iSecond; attribute vec3 iAccent; attribute vec3 iSkin; varying float vPart; varying vec3 vLocal;')
+          .replace(
+            '#include <color_vertex>',
+            `vPart = part; vLocal = position;
+            vec3 pc = iSkin;
+            if (part > 0.5 && part < 1.5) pc = iMain;
+            else if (part > 1.5 && part < 2.5) pc = iSecond;
+            else if (part > 2.5 && part < 3.5) pc = iAccent;
+            else if (part > 3.5 && part < 4.5) pc = vec3(0.022, 0.018, 0.016);
+            else if (part > 4.5 && part < 5.5) pc = vec3(0.62, 0.42, 0.08);
+            else if (part > 5.5) pc = vec3(0.14, 0.07, 0.035);
+            vColor = pc;`
+          );
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying float vPart; varying vec3 vLocal;')
+          .replace(
+            '#include <color_fragment>',
+            `#include <color_fragment>
+            #ifdef PATTERN
+            if (vPart > 0.5 && vPart < 1.5) {
+              vec2 p = vec2(atan(vLocal.x, vLocal.z) * 5.0, vLocal.y * 16.0);
+              float dotm = smoothstep(0.2, 0.12, length(fract(p) - 0.5));
+              diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.95, 0.88, 0.68), dotm * 0.75);
+            }
+            if (vPart > 2.5 && vPart < 3.5) diffuseColor.rgb *= 0.82 + 0.28 * step(0.5, fract((vLocal.x + vLocal.y) * 16.0));
+            #endif`
+          )
+          .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nif (vPart > 4.5 && vPart < 5.5) roughnessFactor = 0.32;')
+          .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nif (vPart > 4.5 && vPart < 5.5) metalnessFactor = 0.85;');
+      };
+      return m;
+    });
+  }
+
+  const OUTFITS = {
+    garbaW: { main: ['#dc2626', '#be123c', '#db2777', '#ea580c', '#f59e0b', '#16a34a', '#2563eb', '#9333ea', '#0d9488', '#e11d48', '#ca8a04'], second: ['#facc15', '#16a34a', '#1d4ed8', '#be185d', '#f97316', '#7c3aed', '#0f766e', '#dc2626'], accent: ['#f472b6', '#fde047', '#fb923c', '#22d3ee', '#a3e635', '#f87171', '#c084fc', '#fef3c7'] },
+    garbaM: { main: ['#f8fafc', '#fef3c7', '#fb923c', '#b91c1c', '#1d4ed8', '#ca8a04', '#be185d', '#0f766e', '#7c2d12'], second: ['#f8fafc', '#fef3c7', '#fde68a', '#e7e5e4'], accent: ['#dc2626', '#f97316', '#facc15', '#db2777', '#16a34a', '#e11d48'] },
+    sareeW: { main: ['#b91c1c', '#be185d', '#7e22ce', '#0f766e', '#ca8a04', '#1d4ed8', '#9d174d', '#ea580c', '#15803d'], second: ['#facc15', '#7f1d1d', '#1e3a8a', '#f5f5f4', '#a16207'], accent: ['#fde047'] },
+    kurtaM: { main: ['#f5f0e6', '#fef3c7', '#7f1d1d', '#1e3a8a', '#111827', '#a16207', '#065f46', '#fafaf9'], second: ['#f5f5f4', '#e7e5e4', '#fef3c7', '#d6d3d1'], accent: ['#fde047'] },
+    casualM: { main: ['#111111', '#1f2937', '#27272a', '#7f1d1d', '#1e3a8a', '#f5f5f5', '#3f3f46', '#14532d', '#334155'], second: ['#1e3a8a', '#1f2937', '#111827', '#334155', '#3b4a6b', '#57534e'], accent: ['#fde047'] },
+    casualW: { main: ['#be185d', '#f5f5f5', '#111111', '#7c3aed', '#0f766e', '#b91c1c', '#ca8a04'], second: ['#1e3a8a', '#111827', '#334155', '#1f2937'], accent: ['#fde047'] },
+  };
+  OUTFITS.casualMUp = OUTFITS.casualM;
+  const SKIN = ['#8d5524', '#a0623a', '#c68642', '#b5784e', '#7c4a2b', '#d6a072', '#9c6644'];
+  const SEATABLE = { sareeW: 1, kurtaM: 1, casualM: 1 };
+
+  // people: [{ x, z, y?, ry?, kind?, seated?, colors?: { main, second, accent } }]
+  // opts.mix: [[kind, weight], ...] picks a kind for people without one.
   function crowd(ctx, people, opts) {
     opts = opts || {};
     const r = ctx.rand;
     const pick = (a) => a[(r() * a.length) | 0];
-    const groups = [[], []];
+    const mix = opts.mix || [['casualM', 1]];
+    const totalW = mix.reduce((s, m) => s + m[1], 0);
+    const pickKind = () => {
+      let x = r() * totalW;
+      for (const [k, w] of mix) if ((x -= w) <= 0) return k;
+      return mix[0][0];
+    };
+    const groups = {};
     people.forEach((p) => {
-      if (p.kind == null) p.kind = r() < (opts.women || 0) ? 1 : 0;
-      p.idx = groups[p.kind].length;
-      groups[p.kind].push(p);
-      p.s = p.s || 0.9 + r() * 0.2;
-      p.sy = p.seated ? 0.72 : 1;
+      p.kind = p.kind || pickKind();
+      if (p.seated && !SEATABLE[p.kind]) p.kind = 'casualM';
+      const key = p.kind + (p.seated ? '_seat' : '');
+      (groups[key] = groups[key] || []).push(p);
+      p.s = p.s || 0.92 + r() * 0.16;
       p.phase = r() * Math.PI * 2;
       p.energy = 0.3 + r() * 0.7;
       if (p.ry == null) p.ry = (opts.face || 0) + (r() - 0.5) * 0.6;
@@ -407,35 +624,38 @@
       p.pz = p.z;
     });
     const col = new THREE.Color();
-    const meshes = [bodyGeo(), skirtGeo()].map((geo, k) => {
-      if (!groups[k].length) return null;
-      const m = new THREE.InstancedMesh(geo, mat('person'), groups[k].length);
-      const pal = PALETTE[k ? opts.paletteW || opts.palette || 'casual' : opts.palette || 'casual'];
-      groups[k].forEach((p) => m.setColorAt(p.idx, col.set(p.color || pick(pal)).convertSRGBToLinear()));
-      m.castShadow = true;
-      m.frustumCulled = false;
-      ctx.scene.add(m);
-      return m;
+    const meshes = Object.keys(groups).map((key) => {
+      const list = groups[key];
+      const pal = OUTFITS[list[0].kind];
+      const geo = personGeo(key).clone();
+      const attrs = { iMain: 'main', iSecond: 'second', iAccent: 'accent', iSkin: null };
+      Object.keys(attrs).forEach((name) => {
+        const arr = new Float32Array(list.length * 3);
+        list.forEach((p, i) => {
+          const hex = attrs[name] ? (p.colors && p.colors[attrs[name]]) || pick(pal[attrs[name]]) : pick(SKIN);
+          col.set(hex).convertSRGBToLinear().toArray(arr, i * 3);
+        });
+        geo.setAttribute(name, new THREE.InstancedBufferAttribute(arr, 3));
+      });
+      const im = new THREE.InstancedMesh(geo, personMaterial(opts.pattern), list.length);
+      im.castShadow = !isSmall;
+      im.frustumCulled = false;
+      ctx.scene.add(im);
+      return { im, list };
     });
-    const heads = new THREE.InstancedMesh(headGeo(), mat('skin'), people.length);
-    people.forEach((p, i) => heads.setColorAt(i, col.set(pick(SKIN)).convertSRGBToLinear()));
-    heads.castShadow = true;
-    heads.frustumCulled = false;
-    ctx.scene.add(heads);
 
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), pos = new THREE.Vector3();
     function write() {
-      for (let i = 0; i < people.length; i++) {
-        const p = people[i];
-        q.setFromAxisAngle(UP, p.ry);
-        sc.set(p.s, p.s * p.sy, p.s);
-        pos.set(p.px, p.py, p.pz);
-        m4.compose(pos, q, sc);
-        meshes[p.kind].setMatrixAt(p.idx, m4);
-        heads.setMatrixAt(i, m4);
-      }
-      meshes.forEach((m) => m && (m.instanceMatrix.needsUpdate = true));
-      heads.instanceMatrix.needsUpdate = true;
+      meshes.forEach(({ im, list }) => {
+        for (let i = 0; i < list.length; i++) {
+          const p = list[i];
+          q.setFromAxisAngle(UP, p.ry);
+          sc.setScalar(p.s);
+          pos.set(p.px, p.py, p.pz);
+          im.setMatrixAt(i, m4.compose(pos, q, sc));
+        }
+        im.instanceMatrix.needsUpdate = true;
+      });
     }
     write();
     if (opts.move) {
@@ -840,8 +1060,8 @@
         }
       }
       instances(ctx, chairParts('plastic'), chairs);
-      crowd(ctx, people, { palette: 'formal', women: 0.35 });
-      crowd(ctx, [{ x: 1.3, z: -0.05, y: 0.45, ry: 0 }, { x: 0, z: 11.85, ry: Math.PI }], { palette: 'stage' });
+      crowd(ctx, people, { mix: [['sareeW', 0.45], ['kurtaM', 0.4], ['casualM', 0.15]] });
+      crowd(ctx, [{ x: 1.3, z: -0.05, y: 0.45, ry: 0, kind: 'kurtaM', colors: { main: '#f5f0e6', second: '#f5f5f4' } }, { x: 0, z: 11.85, ry: Math.PI, kind: 'casualM' }], {});
       [-1, 1].forEach((sx) => spot(ctx, 0xffe2b0, 3, [sx * 6, 7, 8], [0, 1, 0], 0.5));
       [-8, 8].forEach((x) => {
         place(s, cyl(0.05, 0.07, 4, 'steel', 8), x, 2, 6);
@@ -871,7 +1091,7 @@
       place(s, mesh(planeGeo(10, 4.6), 'floral', false), 0, 2.9, -6.15);
       place(s, mesh(roundedBoxGeo(2.4, 0.5, 0.9, 0.1), 'maroon'), 0, 0.85, -5.2);
       place(s, mesh(roundedBoxGeo(2.4, 0.8, 0.2, 0.08), 'gold'), 0, 1.3, -5.6);
-      crowd(ctx, [{ x: -0.45, z: -5.1, y: 0.42, seated: true, kind: 1, color: '#b91c1c' }, { x: 0.45, z: -5.1, y: 0.42, seated: true, color: '#f5e6c8' }], {});
+      crowd(ctx, [{ x: -0.45, z: -5.15, y: 0.62, ry: 0, seated: true, kind: 'sareeW', colors: { main: '#b91c1c', second: '#facc15' } }, { x: 0.45, z: -5.15, y: 0.62, ry: 0, seated: true, kind: 'kurtaM', colors: { main: '#f5e6c8', second: '#fef3c7' } }], {});
       // PA: sub + two dual-15 tops each side
       [-5.7, 5.7].forEach((x, i) => {
         const yaw = -Math.sign(x) * 0.2;
@@ -893,7 +1113,7 @@
       ctx.shaders.push(du);
       const dancers = [];
       for (let i = 0; i < scale(46); i++) dancers.push({ x: (ctx.rand() - 0.5) * 7.4, z: 2.2 + (ctx.rand() - 0.5) * 5.4, ry: ctx.rand() * 6.28 });
-      crowd(ctx, dancers, { palette: 'formal', women: 0.5, paletteW: 'garbaW', move: bounce });
+      crowd(ctx, dancers, { mix: [['garbaW', 0.35], ['sareeW', 0.2], ['kurtaM', 0.3], ['casualM', 0.15]], move: bounce });
       // Round tables and seated guests
       const tables = [], chairs = [], seated = [];
       for (let row = 0; row < 3; row++) {
@@ -913,9 +1133,9 @@
       }
       instances(ctx, [[memo(geoCache, 'tableCloth', () => new THREE.CylinderGeometry(0.95, 1.08, 0.76, 24).translate(0, 0.38, 0)), 'cloth'], [memo(geoCache, 'centre', () => new THREE.SphereGeometry(0.16, 10, 8).translate(0, 0.9, 0)), 'red']], tables);
       instances(ctx, chairParts('chairGold'), chairs);
-      crowd(ctx, seated, { palette: 'formal', women: 0.45, paletteW: 'garbaW' });
+      crowd(ctx, seated, { mix: [['sareeW', 0.45], ['kurtaM', 0.4], ['casualM', 0.15]] });
       place(s, mixer(ctx, { channels: 16, brand: 'Midas' }), 0, 0, 20.5, Math.PI);
-      crowd(ctx, [{ x: 0, z: 21.2, ry: Math.PI }], { palette: 'stage' });
+      crowd(ctx, [{ x: 0, z: 21.2, ry: Math.PI, kind: 'casualM' }], {});
       spot(ctx, 0xfff0d6, 3.5, [0, 8, 6], [0, 0.6, -4.5], 0.55);
       const c1 = spot(ctx, 0xff3d8b, 2, [-6, 6, 3], [0, 0, 2.2], 0.45);
       const c2 = spot(ctx, 0x3db5ff, 2, [6, 6, 3], [0, 0, 2.2], 0.45);
@@ -991,7 +1211,7 @@
       [-7.5, -6.6, 6.6, 7.5].forEach((x) => place(s, mesh(roundedBoxGeo(0.7, 0.6, 0.35, 0.03), 'cab'), x, 2.1, -9.5));
       place(s, cyl(0.008, 0.012, 1.5, 'steel', 6), 0, 2.55, -2.1);
       [-4.5, -1.5, 1.5, 4.5].forEach((x) => place(s, wedge(ctx), x, 1.8, -1.2, Math.PI));
-      crowd(ctx, [{ x: 0, z: -2.5, y: 1.8, ry: 0 }, { x: -5, z: -5.6, y: 1.8 }, { x: 5, z: -5, y: 1.8 }, { x: 0, z: -8.9, y: 2.3, seated: true }, { x: -3, z: -7, y: 1.8 }], { palette: 'stage' });
+      crowd(ctx, [{ x: 0, z: -2.5, y: 1.8, ry: 0, kind: 'casualW', colors: { main: '#f5f5f5', second: '#111111' } }, { x: -5, z: -5.6, y: 1.8, kind: 'casualM' }, { x: 5, z: -5, y: 1.8, kind: 'casualM' }, { x: 0, z: -8.9, y: 2.3, ry: 0, seated: true, kind: 'casualM' }, { x: -3, z: -7, y: 1.8, kind: 'casualW' }], {});
       // Stage wash lights
       const washes = [[-6, 0xff2e63], [-2, 0xffb000], [2, 0x00c2ff], [6, 0xa855f7]].map(([x, c]) => spot(ctx, c, 3, [x, 10.8, -0.6], [x * 0.6, 1.8, -5], 0.5));
       ctx.flicker.push((t, beat) => washes.forEach((w, i) => (w.intensity = 1.8 + beat * 2.5 * ((i % 2) ? 1 : 0.6))));
@@ -1004,7 +1224,7 @@
       [[-2.5, -2], [2.5, -2], [-2.5, 2], [2.5, 2]].forEach(([x, z]) => place(s, cyl(0.04, 0.04, 2.8, 'steel', 6), x, 1.4, fz + z));
       place(s, box(5.6, 0.12, 4.6, 'roof'), 0, 2.86, fz);
       place(s, mixer(ctx, { channels: 32, brand: 'Midas' }), 0, 0, fz, Math.PI);
-      crowd(ctx, [{ x: -0.5, z: fz + 0.7, ry: Math.PI }, { x: 0.6, z: fz + 0.8, ry: Math.PI }], { palette: 'stage' });
+      crowd(ctx, [{ x: -0.5, z: fz + 0.7, ry: Math.PI, kind: 'casualM' }, { x: 0.6, z: fz + 0.8, ry: Math.PI, kind: 'casualM' }], {});
       // Delay towers for the back field
       [-1, 1].forEach((sx) => {
         tr.tower(sx * 14, 42, 8.5);
@@ -1022,7 +1242,7 @@
         if (Math.abs(x) < 4 && z > 28.5 && z < 35.5) continue;
         people.push({ x, z, ry: Math.PI + (ctx.rand() - 0.5) * 0.5 });
       }
-      crowd(ctx, people, { palette: 'concert', women: 0.12, paletteW: 'concert', move: bounce });
+      crowd(ctx, people, { mix: [['casualM', 0.5], ['casualMUp', 0.22], ['casualW', 0.28]], move: bounce });
       return { views: { audience: [[8, 4.6, 31], [0, 5.5, -4]], stage: [[3.5, 5.6, -8.5], [0, 2, 22]], aerial: [[42, 30, 52], [0, 3, 10]] }, maxDist: 110 };
     },
 
@@ -1120,13 +1340,13 @@
       place(s, box(1.2, 0.08, 0.38, 'black'), 5.5, 2.5, sz);
       place(s, box(0.05, 0.85, 0.05, 'steel'), 5.5, 2.05, sz);
       crowd(ctx, [
-        { x: -3.5, z: sz + 2.2, y: 1.6, kind: 1, color: '#be123c', ry: 0 },
-        { x: 3.5, z: sz + 2.2, y: 1.6, color: '#fde68a', ry: 0 },
-        { x: -2.2, z: sz + 0.1, y: 1.6, color: '#f8fafc', ry: 0 },
-        { x: 2.2, z: sz + 0.1, y: 1.6, color: '#fb923c', ry: 0 },
-        { x: 5.5, z: sz - 0.5, y: 1.6, color: '#38bdf8', ry: 0 },
-        { x: -5.5, z: sz - 1, y: 1.6, color: '#f8fafc', ry: 0, seated: true },
-      ], { palette: 'garbaM', move: (p, t, beat) => (p.py = 1.6 + beat * 0.03) });
+        { x: -3.5, z: sz + 2.2, y: 1.6, ry: 0, kind: 'sareeW', colors: { main: '#be123c', second: '#facc15' } },
+        { x: 3.5, z: sz + 2.2, y: 1.6, ry: 0, kind: 'kurtaM', colors: { main: '#fde68a', second: '#f5f5f4' } },
+        { x: -2.2, z: sz + 0.1, y: 1.6, ry: 0, kind: 'kurtaM', colors: { main: '#f8fafc', second: '#f5f5f4' } },
+        { x: 2.2, z: sz + 0.1, y: 1.6, ry: 0, kind: 'kurtaM', colors: { main: '#fb923c', second: '#f5f5f4' } },
+        { x: 5.5, z: sz - 0.5, y: 1.6, ry: 0, kind: 'kurtaM', colors: { main: '#1d4ed8', second: '#f5f5f4' } },
+        { x: -5.5, z: sz - 1, y: 1.6, ry: 0, seated: true, kind: 'kurtaM', colors: { main: '#f8fafc', second: '#f5f5f4' } },
+      ], { move: (p, t, beat) => (p.py = 1.6 + beat * 0.03) });
       place(s, wedge(ctx), -3.5, 1.6, sz + 3.2, Math.PI);
       place(s, wedge(ctx), 3.5, 1.6, sz + 3.2, Math.PI);
       // Delay towers aimed at the arena centre
@@ -1139,7 +1359,7 @@
         place(s, movingHead(ctx, 0xffffff, { length: 20, aim: 0.9, palette: 'navratri' }), x, 9.3, z);
       });
       place(s, mixer(ctx, { channels: 32, brand: 'Midas' }), 0, 0, 27, Math.PI);
-      crowd(ctx, [{ x: -0.4, z: 27.7, ry: Math.PI }, { x: 0.6, z: 27.8, ry: Math.PI }], { palette: 'garbaM' });
+      crowd(ctx, [{ x: -0.4, z: 27.7, ry: Math.PI, kind: 'kurtaM' }, { x: 0.6, z: 27.8, ry: Math.PI, kind: 'casualM' }], {});
       tr.done();
       // Garba rings: dancers circling the mandvi counter-clockwise
       const dancers = [];
@@ -1149,9 +1369,8 @@
         for (let k = 0; k < count; k++) dancers.push({ x: 0, z: 0, rad: rad + (ctx.rand() - 0.5) * 0.3, a0: a0 + (k / count) * Math.PI * 2, speed: 0.95 + ctx.rand() * 0.15 });
       }
       crowd(ctx, dancers, {
-        palette: 'garbaM',
-        paletteW: 'garbaW',
-        women: 0.6,
+        mix: [['garbaW', 0.58], ['garbaM', 0.42]],
+        pattern: true,
         move(p, t, beat) {
           const a = p.a0 + (t * 0.9 * p.speed) / p.rad;
           const step = Math.sin(t * Math.PI * 2 + p.phase);

@@ -221,8 +221,8 @@
       void main() {
         vec2 c = gl_PointCoord - 0.5;
         float a = smoothstep(0.5, 0.1, length(c));
-        vec3 amber = vec3(0.96, 0.62, 0.04);
-        vec3 blue = vec3(0.38, 0.65, 0.98);
+        vec3 amber = vec3(0.95, 0.66, 0.12);
+        vec3 blue = vec3(0.86, 0.24, 0.24);
         vec3 col = mix(blue, amber, clamp(vH * 1.4 + 0.45, 0.0, 1.0));
         gl_FragColor = vec4(col, a * vFade * 0.9);
       }`,

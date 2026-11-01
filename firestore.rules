@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Firestore security rules for AD Sound And System.
+// Publish these in Firebase console → Firestore Database → Rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'adsoundandsystem@gmail.com';
+    }
+
+    function shortText(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // Website visitors may only create a new inquiry with expected fields; they can't read anything.
+    function validPublicInquiry() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'phone', 'email', 'location', 'packageId', 'packageName', 'eventType', 'eventDate', 'days', 'guests', 'venue', 'message', 'language', 'status', 'createdAt', 'updatedAt'])
+        && d.status == 'Pending'
+        && shortText(d.name, 120) && d.name.size() > 0
+        && shortText(d.phone, 40)
+        && shortText(d.location, 160)
+        && shortText(d.packageId, 40)
+        && (!('message' in d) || shortText(d.message, 2000))
+        && (!('venue' in d) || shortText(d.venue, 300));
+    }
+
+    match /inquiries/{id} {
+      allow create: if isAdmin() || validPublicInquiry();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /estimates/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /settings/{doc} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

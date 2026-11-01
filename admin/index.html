@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin | AD Sound And System</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+  <!-- ================= Sign in / set password / forgot password ================= -->
+  <section id="authView" class="auth-bg min-h-screen flex items-center justify-center p-4">
+    <div class="card w-full max-w-sm p-7 sm:p-8">
+      <img src="../assets/logo-white.png" alt="AD Sound &amp; System" class="w-40 mx-auto" />
+      <h1 id="authTitle" class="text-xl font-bold text-white text-center mt-6">Admin sign in</h1>
+      <p id="authSub" class="text-sm text-center mt-1" style="color:var(--muted)">Enter your admin ID and password.</p>
+
+      <form id="loginForm" class="mt-6 space-y-4" novalidate>
+        <label class="lbl">Admin ID (e-mail)
+          <input id="loginEmail" class="field" type="email" autocomplete="username" required />
+        </label>
+        <label class="lbl">Password
+          <div class="relative">
+            <input id="loginPass" class="field pr-16" type="password" autocomplete="current-password" required />
+            <button type="button" class="link absolute right-3 top-1/2 -translate-y-1/2 text-xs" data-toggle-pass="loginPass">Show</button>
+          </div>
+        </label>
+        <p id="loginErr" class="err" hidden></p>
+        <button class="btn btn-primary w-full" type="submit">Sign in</button>
+        <p class="text-center"><button type="button" class="link text-sm" id="showForgot">Forgot password?</button></p>
+      </form>
+
+      <form id="setPassForm" class="mt-6 space-y-4" novalidate hidden>
+        <div class="notice">You signed in with the temporary password. Please set your own permanent password to continue.</div>
+        <label class="lbl">New password
+          <input id="newPass" class="field" type="password" autocomplete="new-password" required />
+        </label>
+        <label class="lbl">Confirm new password
+          <input id="newPass2" class="field" type="password" autocomplete="new-password" required />
+        </label>
+        <ul class="text-xs space-y-1" style="color:var(--muted)">
+          <li>• At least 8 characters</li>
+          <li>• Contains a letter and a number</li>
+          <li>• Different from the temporary password</li>
+        </ul>
+        <p id="setPassErr" class="err" hidden></p>
+        <button class="btn btn-primary w-full" type="submit">Save password &amp; continue</button>
+      </form>
+
+      <form id="forgotForm" class="mt-6 space-y-4" novalidate hidden>
+        <p class="text-sm" style="color:var(--muted)">Enter the admin e-mail. A password-reset link will be sent to that inbox.</p>
+        <label class="lbl">Admin e-mail
+          <input id="forgotEmail" class="field" type="email" autocomplete="username" required />
+        </label>
+        <p id="forgotMsg" class="text-sm" hidden></p>
+        <button class="btn btn-primary w-full" type="submit">Send reset link</button>
+        <p class="text-center"><button type="button" class="link text-sm" id="backToLogin">← Back to sign in</button></p>
+      </form>
+
+      <p id="modeNote" class="text-[11px] text-center mt-6" style="color:#5f5f69"></p>
+    </div>
+  </section>
+
+  <!-- ================= Admin app ================= -->
+  <div id="appView" hidden>
+    <header class="sticky top-0 z-30 border-b" style="background:rgba(11,11,14,.92);backdrop-filter:blur(10px);border-color:var(--line)">
+      <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="../assets/logo-mark-white.png" alt="" class="h-8 w-8" />
+          <span class="font-bold text-white truncate">AD Sound · Admin</span>
+          <span id="modeBadge" class="badge hidden sm:inline-flex"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="userEmail" class="text-xs hidden md:inline" style="color:var(--muted)"></span>
+          <button id="logoutBtn" class="btn btn-ghost btn-sm">Sign out</button>
+        </div>
+      </div>
+      <nav class="max-w-7xl mx-auto px-2 sm:px-4 tabs" role="tablist" id="tabs">
+        <button class="tab" role="tab" data-tab="dashboard">Dashboard</button>
+        <button class="tab" role="tab" data-tab="inquiries">Inquiries</button>
+        <button class="tab" role="tab" data-tab="estimates">Estimations</button>
+        <button class="tab" role="tab" data-tab="master">Price Master</button>
+        <button class="tab" role="tab" data-tab="settings">Settings</button>
+      </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <div id="globalNotice"></div>
+
+      <!-- Dashboard -->
+      <section data-panel="dashboard" hidden>
+        <div id="dashStats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        <div class="grid lg:grid-cols-2 gap-4 mt-4">
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-3"><h2 class="font-semibold text-white">Latest inquiries</h2><button class="link text-sm" data-goto="inquiries">View all →</button></div>
+            <div id="dashInquiries"></div>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-3"><h2 class="font-semibold text-white">Latest estimations</h2><button class="link text-sm" data-goto="estimates">View all →</button></div>
+            <div id="dashEstimates"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Inquiries -->
+      <section data-panel="inquiries" hidden>
+        <div class="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between mb-4">
+          <div class="flex flex-col sm:flex-row gap-2 flex-1">
+            <input id="inqSearch" class="field sm:max-w-xs" placeholder="Search name, phone, ref, venue…" />
+            <div id="inqFilter" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="inqNew" class="btn btn-primary btn-sm">+ New inquiry</button>
+            <button id="inqRefresh" class="btn btn-ghost btn-sm">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="card overflow-hidden">
+          <table class="data cards">
+            <thead><tr><th>Ref / Received</th><th>Customer</th><th>Package</th><th>Event</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+            <tbody id="inqBody"></tbody>
+          </table>
+          <p id="inqEmpty" class="p-8 text-center text-sm" style="color:var(--muted)" hidden></p>
+        </div>
+      </section>
+
+      <!-- Estimations -->
+      <section data-panel="estimates" hidden>
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
+          <input id="estSearch" class="field sm:max-w-xs" placeholder="Search customer, quote no…" />
+          <button id="estNew" class="btn btn-primary btn-sm">+ New estimation</button>
+        </div>
+        <div class="card overflow-hidden">
+          <table class="data cards">
+            <thead><tr><th>Quote</th><th>Customer</th><th>Event</th><th class="text-right">Total</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
+            <tbody id="estBody"></tbody>
+          </table>
+          <p id="estEmpty" class="p-8 text-center text-sm" style="color:var(--muted)" hidden></p>
+        </div>
+      </section>
+
+      <!-- Price Master -->
+      <section data-panel="master" hidden>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Price Master</h2>
+            <p class="text-sm" style="color:var(--muted)">Rates used when building estimations. Never shown on the public website.</p>
+          </div>
+          <span id="masterDirty" class="badge" hidden>Unsaved changes</span>
+        </div>
+
+        <div class="card p-4 sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-semibold text-white">Equipment &amp; service rates</h3>
+            <div class="flex gap-2"><input id="masterSearch" class="field !py-1.5 !text-sm max-w-[12rem]" placeholder="Filter…" /><button id="masterAdd" class="btn btn-ghost btn-sm">+ Add item</button></div>
+          </div>
+          <div class="overflow-x-auto qt">
+            <table class="data" style="min-width:860px">
+              <thead><tr><th style="width:22%">Item</th><th style="width:14%">Category</th><th style="width:18%">Brand / Make</th><th style="width:9%">Unit</th><th class="text-right">INR ₹</th><th class="text-right">USD $</th><th class="text-right">CAD C$</th><th></th></tr></thead>
+              <tbody id="masterItems"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card p-4 sm:p-5 mt-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="font-semibold text-white">Package templates</h3>
+            <button id="tplAdd" class="btn btn-ghost btn-sm">+ Add template</button>
+          </div>
+          <p class="text-sm mb-3" style="color:var(--muted)">Pick a template in an estimation to fill its line items in one click.</p>
+          <div id="masterTemplates" class="grid lg:grid-cols-2 gap-3 qt"></div>
+        </div>
+
+        <div class="grid lg:grid-cols-[320px_1fr] gap-4 mt-4">
+          <div class="card p-4 sm:p-5 qt space-y-3">
+            <h3 class="font-semibold text-white">Defaults</h3>
+            <label class="lbl">GST % (INR)<input id="taxINR" type="number" min="0" step="any" /></label>
+            <label class="lbl">Tax % (USD)<input id="taxUSD" type="number" min="0" step="any" /></label>
+            <label class="lbl">Tax % (CAD)<input id="taxCAD" type="number" min="0" step="any" /></label>
+            <label class="lbl">Estimate validity (days)<input id="validDays" type="number" min="1" /></label>
+          </div>
+          <div class="card p-4 sm:p-5 qt grid md:grid-cols-2 gap-3">
+            <label class="lbl">Terms – India rentals (one per line)<textarea id="termsIndia" rows="9" class="text-xs leading-relaxed"></textarea></label>
+            <label class="lbl">Terms – International services (one per line)<textarea id="termsIntl" rows="9" class="text-xs leading-relaxed"></textarea></label>
+          </div>
+        </div>
+
+        <div class="sticky-bar -mx-4 px-4 py-3 mt-4 flex justify-end gap-2">
+          <button id="masterReset" class="btn btn-ghost btn-sm">Discard changes</button>
+          <button id="masterSave" class="btn btn-primary">Save Price Master</button>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section data-panel="settings" hidden>
+        <div class="grid lg:grid-cols-2 gap-4">
+          <form id="changePassForm" class="card p-5 space-y-3" novalidate>
+            <h2 class="font-semibold text-white">Change password</h2>
+            <label class="lbl">Current password<input id="curPass" class="field" type="password" autocomplete="current-password" /></label>
+            <label class="lbl">New password<input id="chgPass" class="field" type="password" autocomplete="new-password" /></label>
+            <label class="lbl">Confirm new password<input id="chgPass2" class="field" type="password" autocomplete="new-password" /></label>
+            <p id="chgMsg" class="text-sm" hidden></p>
+            <button class="btn btn-primary" type="submit">Update password</button>
+          </form>
+          <div class="card p-5 space-y-3">
+            <h2 class="font-semibold text-white">Data &amp; storage</h2>
+            <div id="storageInfo" class="text-sm space-y-2" style="color:var(--muted)"></div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="backupExport" class="btn btn-ghost btn-sm">⬇ Download backup (JSON)</button>
+              <label class="btn btn-ghost btn-sm">⬆ Restore backup<input id="backupImport" type="file" accept="application/json,.json" hidden /></label>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= Estimation editor ================= -->
+  <div id="editorOverlay" class="overlay" hidden></div>
+  <aside id="editor" class="drawer" aria-hidden="true">
+    <div class="sticky top-0 z-10 border-b px-5 py-4 flex items-center justify-between gap-3" style="background:rgba(11,11,14,.95);border-color:var(--line)">
+      <div class="min-w-0">
+        <h2 class="text-lg font-bold text-white">Estimation</h2>
+        <p id="editorRef" class="text-xs truncate" style="color:var(--muted)"></p>
+      </div>
+      <button id="editorClose" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+    </div>
+
+    <form id="estForm" class="qt p-5 space-y-6" novalidate>
+      <section>
+        <h3 class="text-xs uppercase tracking-widest font-semibold mb-3" style="color:var(--accent)">Customer &amp; event</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <label class="lbl">Name<input data-c="name" /></label>
+          <label class="lbl">Phone<input data-c="phone" /></label>
+          <label class="lbl">E-mail<input data-c="email" /></label>
+          <label class="lbl">Location<input data-c="location" /></label>
+          <label class="lbl">Event type<select data-c="eventType" id="eEventType"></select></label>
+          <label class="lbl">Event date<input data-c="eventDate" type="date" /></label>
+          <label class="lbl">Days / nights<input data-c="days" type="number" min="1" /></label>
+          <label class="lbl">Guests<input data-c="guests" type="number" min="0" /></label>
+          <label class="lbl">Package label<input data-c="packageName" /></label>
+          <label class="lbl sm:col-span-3">Venue<input data-c="venue" /></label>
+        </div>
+        <p id="eMessage" class="mt-3 text-sm card-2 p-3" style="color:#a1a1aa" hidden></p>
+      </section>
+
+      <section>
+        <div class="flex flex-wrap items-end justify-between gap-2 mb-3">
+          <h3 class="text-xs uppercase tracking-widest font-semibold" style="color:var(--accent)">Line items</h3>
+          <div class="flex flex-wrap gap-2 text-sm">
+            <label class="lbl !flex items-center gap-2">Currency <select id="eCurrency" class="!w-auto"></select></label>
+            <select id="eTemplate" class="!w-auto"><option value="">Load package template…</option></select>
+          </div>
+        </div>
+        <div class="overflow-x-auto card-2">
+          <table class="data" style="min-width:760px">
+            <thead><tr><th>Description</th><th style="width:11rem">Brand / Make</th><th class="text-right" style="width:4.5rem">Qty</th><th class="text-right" style="width:4.5rem">Days</th><th class="text-right" style="width:7.5rem">Rate</th><th class="text-right" style="width:7.5rem">Amount</th><th style="width:2rem"></th></tr></thead>
+            <tbody id="eItems"></tbody>
+          </table>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <select id="eAddMaster" class="!w-auto text-sm"></select>
+          <button type="button" id="eAddLine" class="btn btn-ghost btn-sm">+ Custom line</button>
+          <button type="button" id="eSyncDays" class="btn btn-ghost btn-sm">Apply event days to all</button>
+          <button type="button" id="eRefreshRates" class="btn btn-ghost btn-sm" title="Re-read rates from the Price Master">↻ Rates from Price Master</button>
+        </div>
+      </section>
+
+      <section class="grid md:grid-cols-[1fr_300px] gap-6">
+        <div class="space-y-3 text-sm">
+          <div class="grid grid-cols-3 gap-3">
+            <label class="lbl">Discount type<select id="eDiscType"><option value="percent">Percent (%)</option><option value="flat">Flat amount</option></select></label>
+            <label class="lbl">Discount<input id="eDiscount" type="number" min="0" step="any" /></label>
+            <label class="lbl"><span id="eTaxLabel">Tax</span> %<input id="eTax" type="number" min="0" step="any" /></label>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <label class="lbl">Quote no.<input id="eNo" /></label>
+            <label class="lbl">Date<input id="eDate" type="date" /></label>
+            <label class="lbl">Valid (days)<input id="eValid" type="number" min="1" /></label>
+            <label class="lbl">Status<select id="eStatus"><option>Draft</option><option>Sent</option><option>Accepted</option><option>Rejected</option></select></label>
+          </div>
+          <label class="lbl">Notes (shown on PDF)<textarea id="eNotes" rows="2"></textarea></label>
+          <label class="lbl">Terms &amp; conditions (one per line)<textarea id="eTerms" rows="6" class="text-xs leading-relaxed"></textarea></label>
+        </div>
+        <div id="eTotals" class="card p-4 h-fit space-y-2 text-sm md:sticky md:top-24"></div>
+      </section>
+
+      <div class="sticky-bar -mx-5 px-5 py-3 flex flex-wrap gap-2 justify-end">
+        <button type="button" id="eDelete" class="btn btn-danger btn-sm mr-auto">Delete</button>
+        <button type="button" id="eSave" class="btn btn-ghost">Save</button>
+        <button type="button" id="ePreview" class="btn btn-ghost">Preview PDF</button>
+        <button type="button" id="eDownload" class="btn btn-primary">Download PDF</button>
+      </div>
+    </form>
+  </aside>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/cloud.js"></script>
+  <script src="js/price-defaults.js"></script>
+  <script src="js/logo-data.js"></script>
+  <script src="js/pdf.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

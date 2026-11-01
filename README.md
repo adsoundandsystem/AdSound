@@ -1,65 +1,76 @@
-# AD Sound And System — Web Application
+# AD Sound And System — Website & Admin
 
-Single-page website + admin panel for **AD Sound And System** (Dilipbhai Dave & Aniket Dave · +91 8320330558 · adsoundandsystem@gmail.com).
-100% client-side (HTML + Tailwind CDN + Three.js + jsPDF) — no build step, ready for GitHub Pages.
+Public website and a separate admin panel for **AD Sound And System** (since 1995 · 1,500+ events · Dilipbhai Dave & Aniket Dave · +91 8320330558 · adsoundandsystem@gmail.com).
+Static files only (HTML + Tailwind CDN + Three.js + jsPDF), ready for GitHub Pages. Works on phones, tablets and desktops.
 
 ## Structure
 
 ```
-index.html            Public site: brands, 3D visualizer, packages, international services, inquiry form
-admin.html            Admin panel: login, inquiry dashboard, status tracking, quotation builder, PDF export
-css/styles.css        Shared custom styles (dark theme on top of Tailwind)
-js/data.js            ★ Business info, brands, packages, services, rates, terms, admin password hash
-js/storage.js         localStorage inquiry store + helpers
-js/i18n.js            English / ગુજરાતી / हिन्दी translations + language switcher
-js/main.js            Public site rendering, instant estimator, FAQ, inquiry form
-js/visualizer.js      Realistic Three.js scenes: 2-Panel Compact, 4-Panel Banquet, Line Array Concert, Line Array Navratri
-js/hero.js            Hero particle sound-field (WebGL shader) + Web Audio demo beat ("Feel the sound")
-js/fx.js              Preloader, Lenis smooth scroll, GSAP scroll reveals, counters, custom cursor, magnetic/tilt effects
-js/admin.js           Admin dashboard + quotation builder
-js/pdf.js             Branded estimation PDF engine (jsPDF + AutoTable)
-js/logo-data.js       Logo embedded as base64 for the PDF (generated from assets/logo.png)
-assets/               logo.png, logo-white.png, logo-mark-white.png, favicon.png
-.nojekyll             Tells GitHub Pages to serve files as-is
+index.html              Public website (English / ગુજરાતી / हिन्दी). No prices are shown.
+css/styles.css          Public site styles (warm paper / indigo / sindoor / haldi theme)
+js/data.js              Public catalogue: business info, packages, services, FAQs (no prices)
+js/i18n.js              Gujarati & Hindi translations + language switcher
+js/main.js              "Plan your sound" journey (occasion → 3D → guests → recommended rig), catalogue, inquiry form
+js/visualizer.js        Three.js scenes: Compact, Banquet, Line Array Concert, Line Array Navratri
+js/hero.js              Hero sound-field animation and demo beat
+js/site.js              Header state, reveal-on-scroll, counters, FAQ accordion, mobile dock
+js/config.js            ★ Firebase settings (optional, see below) and the admin e-mail
+js/cloud.js             Data layer: Firebase Firestore when configured, otherwise browser storage
+js/storage.js           Small shared helpers
+
+admin/index.html        Admin panel (not linked from the website)
+admin/js/auth.js        Sign-in, permanent password, forgot password
+admin/js/admin.js       Dashboard, inquiries, estimations, Price Master, settings
+admin/js/pdf.js         Branded estimation PDF (jsPDF)
+admin/js/price-defaults.js  Starting Price Master (items & templates, all rates 0)
+firestore.rules         Security rules to publish in Firebase
 ```
-
-## Run locally
-
-Open `index.html` directly, or (recommended, matches GitHub Pages) serve the folder:
-
-```
-python -m http.server 8000
-# then visit http://localhost:8000
-```
-
-## Deploy to GitHub Pages
-
-1. Push this folder to a GitHub repository (files at the repo root).
-2. Repo **Settings → Pages → Build and deployment → Deploy from a branch**, choose `main` / `(root)`.
-3. Site goes live at `https://<user>.github.io/<repo>/`; admin at `/admin.html`.
 
 ## Admin panel
 
-- URL: `admin.html` (also linked in the site footer). Default password: **`adsound@2026`**.
-- **Change the password:** open the site, press F12 → Console, run `await AD_sha256('your-new-password')`, and paste the result into `adminPasswordHash` in `js/data.js`.
-- Features: inquiry table with search, status filter and counts (Pending / Confirmed / Completed / Cancelled), inline status updates, manual "+ New inquiry", JSON export/import, and a quotation builder (line items, qty, days, rates, add-ons, discount % or flat, GST/tax, notes, editable terms, INR / USD / CAD) that downloads or previews a branded PDF.
+- Open **`/admin/`** directly, e.g. `https://adsoundandsystem.github.io/AdSound/admin/`. There is no link to it on the website.
+- First sign-in: **ID** `adsoundandsystem@gmail.com`, **temporary password** `ADSound`.
+- You are then asked to set a **permanent password** (8+ characters, with a letter and a number). The temporary password stops working after that.
+- **Forgot password?** sends a reset link to the admin e-mail (requires the Firebase setup below).
+- Tabs:
+  - **Dashboard** – inquiry counts and latest activity.
+  - **Inquiries** – everything submitted from the website; change status (Pending / Confirmed / Completed / Cancelled); create an estimation from any inquiry.
+  - **Estimations** – build an itemised estimate from the Price Master (or a package template), add discount and GST/tax, and download or preview the branded PDF. Status: Draft / Sent / Accepted / Rejected.
+  - **Price Master** – your private rates (INR / USD / CAD) for every item, package templates, default tax rates, estimate validity and terms & conditions. **All rates start at 0 — enter your real rates and press Save.**
+  - **Settings** – change password, download / restore a JSON backup.
 
-### Important limitations (by design of a client-side-only site)
+## Firebase setup (recommended, ~10 minutes)
 
-- **Inquiries live in the browser's localStorage.** A customer submitting the form on *their* phone stores it on *their* phone. That is why, after submitting, the customer is prompted to **send the inquiry on WhatsApp or email** to the business. The admin then records it with **+ New inquiry** (or it is already there when the form was filled on the admin's own device). Use **Export/Import JSON** to back up or move data between devices.
-- **The admin password is a client-side gate**, not real security: it keeps casual visitors out of the UI, but anyone technical can read the code. Don't store sensitive data. For true multi-device, secure storage, add a backend (e.g. Firebase/Supabase) later; `js/storage.js` is the only file that would need to change.
-- jsPDF's built-in fonts have no ₹ glyph, so PDFs print INR amounts as **"Rs."**. Non-Latin text (e.g. Gujarati names) is stripped from the PDF; type names in English in the quotation builder.
+Without Firebase the site runs in **browser-only mode**: data is kept in one browser, so inquiries from customers' phones never reach the admin, and password-reset e-mails can't be sent. Firebase (free "Spark" plan) fixes both.
+
+1. Go to https://console.firebase.google.com, sign in with the business Google account and **Add project** (e.g. `adsound`). Google Analytics is optional.
+2. **Build → Authentication → Get started → Sign-in method → Email/Password → Enable.**
+3. Still in Authentication → **Users → Add user**: e-mail `adsoundandsystem@gmail.com`, password `ADSound`. (Creating it yourself means nobody else can claim the account first.) After the first sign-in the admin panel will ask for the permanent password.
+4. **Authentication → Settings → Authorized domains → Add domain**: `adsoundandsystem.github.io`.
+5. **Build → Firestore Database → Create database** (production mode, a region near India such as `asia-south1`).
+6. Firestore → **Rules**: replace the contents with `firestore.rules` from this repository and **Publish**.
+7. **Project settings (⚙) → Your apps → Web (`</>`)** → register an app → copy the `firebaseConfig` object.
+8. Paste it into `js/config.js` as `window.AD_FIREBASE = { ... }` and publish the site again.
+
+After that: website inquiries are stored online, the admin panel works from any device, and "Forgot password?" e-mails a reset link to adsoundandsystem@gmail.com. The Firebase web config is not a secret; access is controlled by the rules in step 6.
+
+## Run locally
+
+```
+python -m http.server 8000
+# site:  http://localhost:8000
+# admin: http://localhost:8000/admin/
+```
+
+## Deploy (GitHub Pages)
+
+Repository **Settings → Pages → Deploy from a branch → `main` / `(root)`**.
 
 ## Languages
 
-The public site is available in English, Gujarati and Hindi (EN / ગુ / हि switch in the header; the choice is remembered, and Gujarati/Hindi browsers get their language automatically).
+English text lives in `index.html`; Gujarati and Hindi live in `js/i18n.js` under the same `data-i18n` keys (package, service, FAQ and event-type translations are in its `D` section). Inquiries are stored in English with the visitor's language noted, so the admin panel and PDFs stay in English (jsPDF's built-in fonts can't print Gujarati/Hindi script).
 
-- English text lives in `index.html`; Gujarati and Hindi live in `js/i18n.js` under the same `data-i18n` keys. To change a sentence, edit it in all three places.
-- Package, service, FAQ and event-type translations are in the `D` section of `js/i18n.js`, keyed by the ids in `js/data.js`.
-- Inquiries are always stored in English (with the visitor's language noted), so the admin panel and PDFs stay in English. PDFs can't print Gujarati/Hindi script with jsPDF's built-in fonts.
+## Notes
 
-## Customising
-
-Everything business-related is in **`js/data.js`**: contact details, brand lists, package gear lists, published price ranges, per-item default rates used to pre-fill quotations, international service rates (USD/CAD), add-on items, event types and terms & conditions. The default per-item rates are starting points that add up within each package's published range; adjust them to your actual pricing.
-
-To regenerate the logo files from a new source image, replace `assets/logo.png` and update `js/logo-data.js` with its base64 PNG (`window.AD_LOGO = { dataUrl, width, height }`).
+- Browser-only mode: the admin password is stored hashed in that browser; anyone can open `/admin/` on their own device, but they see only their own (empty) browser data. Use Firebase for real multi-device security.
+- PDFs print INR amounts as "Rs." because jsPDF's built-in fonts have no ₹ glyph.

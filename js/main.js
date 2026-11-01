@@ -1,111 +1,43 @@
-// Public site: renders catalog from AD data (localised via I18N), drives the 3D visualizer, estimator and the inquiry form.
+// Public site: the "Plan your sound" journey (occasion → 3D stage → guests → recommended rig → inquiry),
+// the localised catalogue and the inquiry form. No prices are shown anywhere; estimates come from inquiries.
 (function () {
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const esc = window.escapeHtml;
   const t = I18N.t;
   const scrollTo = (el) => (window.ADScrollTo ? window.ADScrollTo(el) : el.scrollIntoView({ behavior: 'smooth' }));
+  const fmtNum = (n) => Number(n).toLocaleString('en-IN');
 
   $('#year').textContent = new Date().getFullYear();
+  // "30+ years" grows on its own as time passes (rounded down to a multiple of 5).
+  const years = Math.floor((new Date().getFullYear() - AD.business.since) / 5) * 5;
+  $('#yearsCount').dataset.count = years;
+  $('#yearsCount').textContent = years + '+';
 
-  // Mobile menu
-  const menuBtn = $('#menuBtn');
-  const mobileMenu = $('#mobileMenu');
-  menuBtn.addEventListener('click', () => {
-    const open = mobileMenu.classList.toggle('hidden') === false;
-    menuBtn.setAttribute('aria-expanded', String(open));
-  });
-  mobileMenu.addEventListener('click', (e) => {
-    if (e.target.tagName === 'A') mobileMenu.classList.add('hidden');
-  });
+  const brandList = (list) => list.map((b) => `<span>${esc(b)}</span>`).join('');
+  $('#speakerBrands').innerHTML = brandList(AD.brands.speakers);
+  $('#mixerBrands').innerHTML = brandList(AD.brands.mixers);
 
-  // Brands never change with language: marquees (doubled for a seamless loop) + tiles.
-  const marquee = (list) => {
-    const items = list.concat(list, list).map((b) => `<span class="marquee-item">${esc(b)}</span>`).join('');
-    return items + items;
+  const ticks = (list) => `<ul class="tick-list">${list.map((g) => `<li>${esc(g)}</li>`).join('')}</ul>`;
+  const pills = (list) => list.map((b) => `<span class="pill">${esc(b)}</span>`).join('');
+
+  // ---------- Occasions ----------
+  // Each occasion picks a 3D scene, the event type sent with the inquiry and a typical crowd size.
+  const OCCASIONS = {
+    navratri: { scene: 'navratri', eventType: 'Garba / Navratri', guests: 1500, label: 'exp.garba.t' },
+    wedding: { scene: 'banquet', eventType: 'Wedding / Sangeet', guests: 300, label: 'exp.wed.t' },
+    concert: { scene: 'concert', eventType: 'Concert / Live Show', guests: 2000, label: 'exp.concert.t' },
+    small: { scene: 'compact', eventType: 'Corporate Event', guests: 100, label: 'occ.small.t' },
   };
-  $('#marqueeSpeakers').innerHTML = marquee(AD.brands.speakers);
-  $('#marqueeMixers').innerHTML = marquee(AD.brands.mixers);
-  const brandTile = (b) => `<div class="brand-tile panel !rounded-xl px-2 py-5 text-center text-sm sm:text-base">${esc(b)}</div>`;
-  $('#speakerBrands').innerHTML = AD.brands.speakers.map(brandTile).join('');
-  $('#mixerBrands').innerHTML = AD.brands.mixers.map(brandTile).join('');
+  const VISUAL_TO_OCCASION = { compact: 'small', banquet: 'wedding', concert: 'concert', navratri: 'navratri' };
+  const SCENE_PACKAGE = { compact: 0, banquet: 1, concert: 2, navratri: 2 };
+  let occasion = 'navratri';
+  let guests = OCCASIONS.navratri.guests;
 
-  const tick = (g) => `<li class="flex gap-2"><span class="text-accent">▸</span><span>${esc(g)}</span></li>`;
-  const priceRange = (p) => p.price.replace(' / day', '');
+  const rigFor = (n) => AD.packages.find((p) => n <= p.maxGuests) || AD.packages[AD.packages.length - 1];
 
-  // ---------- Catalogue (re-rendered on language change) ----------
-  function renderCatalog() {
-    $('#packageGrid').innerHTML = AD.packages
-      .map(I18N.pkg)
-      .map(
-        (p, i) => `
-      <article class="glow-card p-7 flex flex-col ${p.featured ? '!border-accent/60 shadow-[0_0_60px_-20px_rgba(245,158,11,0.45)]' : ''}" data-tilt>
-        <div class="flex items-start justify-between gap-3">
-          <span class="font-display text-5xl text-zinc-800">0${i + 1}</span>
-          ${p.featured ? `<span class="badge !text-accent !border-accent/40">${esc(t('pkg.most'))}</span>` : ''}
-        </div>
-        <h3 class="font-display text-2xl sm:text-3xl text-white mt-2">${esc(p.name)}</h3>
-        <p class="text-zinc-400 text-sm mt-1">${esc(p.tagline)}</p>
-        <div class="mt-6 flex items-baseline gap-2 flex-wrap">
-          <span class="font-display text-3xl text-accent">${esc(priceRange(p))}</span>
-          <span class="text-zinc-500 text-sm">${esc(t('perDay'))}</span>
-        </div>
-        <p class="text-sm text-zinc-300 mt-1">👥 ${esc(p.capacity)}</p>
-        <ul class="mt-6 space-y-2 text-sm text-zinc-300 flex-1">${p.gear.map(tick).join('')}</ul>
-        <div class="flex flex-wrap gap-1.5 mt-6">${p.brands.map((b) => `<span class="badge">${esc(b)}</span>`).join('')}</div>
-        <div class="mt-7 grid grid-cols-2 gap-2">
-          <button class="btn btn-ghost btn-sm !rounded-full" data-view3d="${p.visual}">${esc(t('pkg.view3d'))}</button>
-          <button class="btn btn-primary btn-sm !rounded-full" data-pick="${p.id}">${esc(t('pkg.quote'))}</button>
-        </div>
-      </article>`
-      )
-      .join('');
-
-    $('#serviceGrid').innerHTML = AD.services
-      .map(I18N.svc)
-      .map(
-        (s) => `
-      <article class="glow-card p-7 flex flex-col" data-tilt>
-        <span class="text-xs font-semibold text-accent tracking-widest">${esc(t('svc.label'))} ${esc(s.code)}</span>
-        <h3 class="font-display text-2xl sm:text-3xl text-white mt-1">${esc(s.name)}</h3>
-        <div class="mt-5 flex flex-wrap items-baseline gap-x-3">
-          <span class="font-display text-3xl text-accent">$${s.rates.USD} USD</span>
-          <span class="text-zinc-400">/ $${s.rates.CAD} CAD</span>
-          <span class="text-zinc-500 text-sm">${esc(t(s.unit === 'day' ? 'unit.perDay' : 'unit.project'))}</span>
-        </div>
-        <ul class="mt-6 space-y-2 text-sm text-zinc-300 flex-1">${s.points.map(tick).join('')}</ul>
-        <div class="flex flex-wrap gap-1.5 mt-6">${s.brands.map((b) => `<span class="badge">${esc(b)}</span>`).join('')}</div>
-        <button class="btn btn-primary btn-sm !rounded-full mt-7" data-pick="${s.id}">${esc(t('svc.book'))}</button>
-      </article>`
-      )
-      .join('');
-
-    const summaryRows = AD.packages
-      .map(I18N.pkg)
-      .map((p) => [p.name, p.capacityShort, p.brands.slice(0, 4).join(' / '), `${priceRange(p)} ${t('perDay')}`])
-      .concat(AD.services.map(I18N.svc).map((s) => [s.name, t('sum.global'), `${s.brands.join(' / ')} ${t('sum.showfiles')}`, `$${s.rates.USD} USD / $${s.rates.CAD} CAD ${t(s.unit === 'day' ? 'unit.perDay' : 'unit.project')}`]));
-    $('#summaryBody').innerHTML = summaryRows
-      .map((r) => `<tr class="hover:bg-zinc-900/40 transition-colors">${r.map((c, i) => `<td class="p-4 ${i === 0 ? 'text-white font-medium' : 'text-zinc-400'} ${i === 3 ? '!text-accent whitespace-nowrap' : ''}">${esc(c)}</td>`).join('')}</tr>`)
-      .join('');
-
-    $('#faqList').innerHTML = I18N.faqs()
-      .map(
-        ([q, a], i) => `
-      <div class="faq-item">
-        <button type="button" class="w-full flex items-center justify-between gap-6 py-5 text-left" data-faq aria-expanded="false" aria-controls="faq${i}">
-          <span class="font-display text-lg sm:text-xl text-white">${esc(q)}</span>
-          <span class="faq-plus text-2xl text-zinc-500 leading-none">+</span>
-        </button>
-        <div class="faq-body" id="faq${i}"><p class="pb-5 text-zinc-400 max-w-2xl">${esc(a)}</p></div>
-      </div>`
-      )
-      .join('');
-  }
-
-  // ---------- 3D visualizer ----------
-  const VIZ_PACKAGE = { compact: 0, banquet: 1, concert: 2, navratri: 2 };
+  // ---------- 3D stage ----------
   let viz = null;
-  let current = 'compact';
   const hasWebGL = (() => {
     try {
       const c = document.createElement('canvas');
@@ -115,33 +47,26 @@
     }
   })();
 
-  function renderVizInfo() {
-    const p = I18N.pkg(AD.packages[VIZ_PACKAGE[current]]);
-    const title = current === 'concert' || current === 'navratri' ? t('viz.name.' + current) : p.name;
-    $('#vizInfo').innerHTML = `
-      <p class="text-xs uppercase tracking-widest text-accent font-semibold">${esc(t('viz.now'))}</p>
-      <h3 class="font-display text-2xl text-white mt-1">${esc(title)}</h3>
-      <p class="text-sm text-zinc-400 mt-2">${esc(t('viz.note.' + current))}</p>
-      <dl class="mt-5 space-y-3 text-sm">
-        <div class="flex justify-between gap-4"><dt class="text-zinc-500">${esc(t('viz.capacity'))}</dt><dd class="text-white text-right">${esc(p.capacity)}</dd></div>
-        <div class="flex justify-between gap-4"><dt class="text-zinc-500">${esc(t('viz.rate'))}</dt><dd class="text-accent text-right">${esc(priceRange(p))} ${esc(t('perDay'))}</dd></div>
-      </dl>
-      <ul class="mt-5 space-y-1.5 text-sm text-zinc-300">${p.gear.map(tick).join('')}</ul>
-      <button class="btn btn-primary btn-sm !rounded-full w-full mt-6" data-pick="${p.id}">${esc(t('viz.quote'))}</button>`;
+  function sceneTitle(scene) {
+    return scene === 'concert' || scene === 'navratri' ? t('viz.name.' + scene) : I18N.pkg(AD.packages[SCENE_PACKAGE[scene]]).name;
+  }
+
+  function renderStageText() {
+    const scene = OCCASIONS[occasion].scene;
+    $('#vizTitle').textContent = sceneTitle(scene);
+    $('#vizNote').textContent = t('viz.note.' + scene);
   }
 
   function markView(key) {
     $$('#vizViews [data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === key)));
   }
 
-  function showSetup(name) {
-    current = name;
-    $$('.viz-tab').forEach((tab) => tab.setAttribute('aria-selected', String(tab.dataset.setup === name)));
-    renderVizInfo();
+  function loadScene() {
+    renderStageText();
     markView('audience');
     if (!viz) return;
     try {
-      viz.load(name);
+      viz.load(OCCASIONS[occasion].scene);
     } catch (e) {
       console.error(e);
       $('#vizFallback').classList.remove('hidden');
@@ -152,8 +77,7 @@
     $('#vizPlay').textContent = t(!viz || viz.playing ? 'viz.pause' : 'viz.play');
   }
 
-  // Build the WebGL viewer only when the section approaches the viewport: the scenes are heavy,
-  // and most visitors' first seconds are spent on the hero.
+  // The scenes are heavy, so the WebGL viewer is only built when the planner approaches the viewport.
   let vizStarted = false;
   function startViz() {
     if (vizStarted) return;
@@ -166,7 +90,7 @@
       }
     }
     if (!viz) $('#vizFallback').classList.remove('hidden');
-    showSetup(current);
+    loadScene();
     setPlayLabel();
   }
   if (window.IntersectionObserver) {
@@ -175,18 +99,12 @@
         io.disconnect();
         startViz();
       }
-    }, { rootMargin: '400px 0px' });
-    io.observe($('#visualizer'));
+    }, { rootMargin: '300px 0px' });
+    io.observe($('.stage'));
   } else {
     startViz();
   }
-  showSetup('compact');
-  setPlayLabel();
 
-  $('#vizTabs').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-setup]');
-    if (b && b.dataset.setup !== current) showSetup(b.dataset.setup);
-  });
   $('#vizViews').addEventListener('click', (e) => {
     const b = e.target.closest('[data-view]');
     if (!b || !viz) return;
@@ -205,114 +123,110 @@
     markView('audience');
   });
 
-  // ---------- Instant estimator ----------
-  const est = { mode: 'india', addons: new Set(), services: new Set(['showfile', 'virtual']), currency: 'USD' };
-  const ESTIMATOR_ADDONS = [0, 1, 2]; // indexes into AD.addons: transport, engineer, DG set
+  // ---------- Occasion + guests → recommendation ----------
+  const range = $('#guestRange');
 
-  function renderEstimatorChips() {
-    $('#estAddons').innerHTML = ESTIMATOR_ADDONS.map((i) => `<button type="button" class="chip" data-addon="${i}" aria-pressed="${est.addons.has(i)}">+ ${esc(I18N.addon(i))}</button>`).join('');
-    $('#estServices').innerHTML = AD.services.map(I18N.svc).map((s) => `<button type="button" class="chip" data-service="${s.id}" aria-pressed="${est.services.has(s.id)}">${esc(s.name)}</button>`).join('');
+  function selectOccasion(key, { keepGuests } = {}) {
+    occasion = key;
+    $$('#occasions [data-occ]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.occ === key)));
+    if (!keepGuests) setGuests(OCCASIONS[key].guests);
+    loadScene();
+    renderReco();
   }
 
-  function setFill(input) {
-    input.style.setProperty('--fill', ((input.value - input.min) / (input.max - input.min)) * 100 + '%');
-  }
-  const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
-  const dayWord = (n) => t(n > 1 ? 'unit.days' : 'unit.day');
-
-  function recommend(guests) {
-    return AD.packages.find((p) => guests <= p.maxGuests) || AD.packages[AD.packages.length - 1];
+  function setGuests(n) {
+    guests = Math.max(Number(range.min), Math.min(Number(range.max), Math.round(n)));
+    range.value = guests;
+    range.style.setProperty('--fill', ((guests - range.min) / (range.max - range.min)) * 100 + '%');
+    $('#guestOut').textContent = fmtNum(guests) + (guests >= Number(range.max) ? '+' : '');
+    $$('#guestPresets [data-guests]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.guests) === guests)));
   }
 
-  function renderEstimate() {
-    const out = { name: $('#estName'), sub: $('#estSub'), total: $('#estTotal'), list: $('#estBreakdown') };
-    const row = (label, value) => `<li class="flex justify-between gap-3"><span>${esc(label)}</span><span class="text-zinc-400 whitespace-nowrap">${esc(value)}</span></li>`;
-    if (est.mode === 'india') {
-      const guests = Number($('#estGuests').value);
-      const days = Number($('#estDays').value);
-      $('#estGuestsOut').textContent = guests >= 3000 ? '3,000+' : guests.toLocaleString('en-IN');
-      $('#estDaysOut').textContent = days;
-      const base = recommend(guests);
-      const p = I18N.pkg(base);
-      // Within a package, scale toward the top of the range as the crowd grows.
-      const prev = AD.packages[AD.packages.indexOf(base) - 1];
-      const lo = prev ? prev.maxGuests : 0;
-      const k = Math.min(1, Math.max(0, (guests - lo) / (p.maxGuests - lo)));
-      const dayMin = p.priceMin + (p.priceMax - p.priceMin) * k * 0.5;
-      const dayMax = p.priceMin + (p.priceMax - p.priceMin) * (0.5 + k * 0.5);
-      let addTotal = 0;
-      const lines = [row(`${p.name} × ${days} ${dayWord(days)}`, `${inr(dayMin * days)} – ${inr(dayMax * days)}`)];
-      est.addons.forEach((i) => {
-        const amt = AD.addons[i].rate * days;
-        addTotal += amt;
-        lines.push(row(I18N.addon(i), inr(amt)));
-      });
-      out.name.textContent = p.name;
-      out.sub.textContent = `${p.capacity} · ${p.brands.slice(0, 3).join(' / ')}`;
-      out.total.textContent = `${inr(dayMin * days + addTotal)} – ${inr(dayMax * days + addTotal)}`;
-      out.list.innerHTML = lines.join('');
-      est.pick = { packageId: p.id, days, guests };
-    } else {
-      const nights = Number($('#estNights').value);
-      $('#estNightsOut').textContent = nights;
-      const sym = est.currency === 'CAD' ? 'C$' : '$';
-      let total = 0;
-      const lines = [];
-      const chosen = AD.services.filter((s) => est.services.has(s.id)).map(I18N.svc);
-      chosen.forEach((s) => {
-        const units = s.unit === 'day' ? nights : 1;
-        const amt = s.rates[est.currency] * units;
-        total += amt;
-        lines.push(row(units > 1 ? `${s.name} × ${units} ${t('unit.nights')}` : s.name, `${sym}${amt.toLocaleString()}`));
-      });
-      out.name.textContent = chosen.length === 2 ? t('est.full') : chosen.length ? chosen[0].name : t('est.pick');
-      out.sub.textContent = t('est.remoteSub');
-      out.total.textContent = total ? `${sym}${total.toLocaleString()} ${est.currency}` : '-';
-      out.list.innerHTML = lines.join('');
-      est.pick = { packageId: chosen.length === 1 ? chosen[0].id : 'virtual', days: nights, guests: '' };
-    }
-    ['#estGuests', '#estDays', '#estNights'].forEach((s) => setFill($(s)));
+  function renderReco() {
+    const rig = I18N.pkg(rigFor(guests));
+    $('#rigScale').innerHTML = AD.packages
+      .map(I18N.pkg)
+      .map((p) => `<li class="${p.id === rig.id ? 'is-on' : ''}"><b>${esc(p.name)}</b><span>${esc(p.capacityShort)}</span></li>`)
+      .join('');
+    $('#planReco').innerHTML = `
+      <p class="eyebrow">${esc(t('plan.rig', { n: fmtNum(guests) }))}</p>
+      <h3 class="display text-3xl sm:text-4xl mt-3">${esc(rig.name)}</h3>
+      <p class="text-muted mt-1">${esc(rig.tagline)}</p>
+      <span class="rig-cap">👥 ${esc(rig.capacity)}</span>
+      <div class="mt-5">${ticks(rig.gear)}</div>
+      <p class="text-sm text-muted mt-5">${esc(t('plan.note'))}</p>
+      <button type="button" id="planGo" class="btn btn-sindoor btn-lg w-full sm:w-auto mt-6">${esc(t('plan.go'))}</button>`;
   }
 
-  ['#estGuests', '#estDays', '#estNights'].forEach((s) => $(s).addEventListener('input', renderEstimate));
+  $('#occasions').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-occ]');
+    if (b && b.dataset.occ !== occasion) selectOccasion(b.dataset.occ);
+  });
+  range.addEventListener('input', () => {
+    setGuests(Number(range.value));
+    renderReco();
+  });
+  $('#guestPresets').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-guests]');
+    if (!b) return;
+    setGuests(Number(b.dataset.guests));
+    renderReco();
+  });
 
-  $('#estMode').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-mode]');
-    if (!b) return;
-    est.mode = b.dataset.mode;
-    $$('#estMode .chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
-    $('#estIndia').classList.toggle('hidden', est.mode !== 'india');
-    $('#estIntl').classList.toggle('hidden', est.mode !== 'intl');
-    renderEstimate();
-  });
-  $('#estAddons').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-addon]');
-    if (!b) return;
-    const i = Number(b.dataset.addon);
-    est.addons.has(i) ? est.addons.delete(i) : est.addons.add(i);
-    b.setAttribute('aria-pressed', String(est.addons.has(i)));
-    renderEstimate();
-  });
-  $('#estServices').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-service]');
-    if (!b) return;
-    const id = b.dataset.service;
-    est.services.has(id) ? est.services.delete(id) : est.services.add(id);
-    b.setAttribute('aria-pressed', String(est.services.has(id)));
-    renderEstimate();
-  });
-  $('#estCurrency').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-cur]');
-    if (!b) return;
-    est.currency = b.dataset.cur;
-    $$('#estCurrency .chip').forEach((c) => c.setAttribute('aria-pressed', String(c === b)));
-    renderEstimate();
-  });
+  // ---------- Catalogue (re-rendered on language change) ----------
+  function renderCatalog() {
+    $('#packageGrid').innerHTML = AD.packages
+      .map(I18N.pkg)
+      .map(
+        (p, i) => `
+      <article class="rig ${p.featured ? 'rig-featured' : ''}">
+        ${p.featured ? `<span class="rig-badge">${esc(t('pkg.most'))}</span>` : ''}
+        <span class="rig-no">0${i + 1}</span>
+        <h3 class="display text-2xl sm:text-3xl mt-3">${esc(p.name)}</h3>
+        <p class="text-muted text-sm mt-1">${esc(p.tagline)}</p>
+        <span class="rig-cap">👥 ${esc(p.capacity)}</span>
+        <div class="rig-perf"></div>
+        <div class="flex-1">${ticks(p.gear)}</div>
+        <div class="flex flex-wrap gap-1.5 mt-5">${pills(p.brands)}</div>
+        <div class="grid grid-cols-2 gap-2 mt-6">
+          <button type="button" class="btn btn-outline" data-view3d="${p.visual}">${esc(t('pkg.view3d'))}</button>
+          <button type="button" class="btn btn-sindoor" data-pick="${p.id}">${esc(t('pkg.cta'))}</button>
+        </div>
+      </article>`
+      )
+      .join('');
+
+    $('#serviceGrid').innerHTML = AD.services
+      .map(I18N.svc)
+      .map(
+        (s) => `
+      <article class="svc reveal is-in">
+        <span class="text-xs font-extrabold tracking-[0.2em] text-haldi">${esc(t('svc.label'))} ${esc(s.code)}</span>
+        <h3 class="display text-2xl sm:text-3xl mt-2">${esc(s.name)}</h3>
+        <div class="mt-5 flex-1">${ticks(s.points)}</div>
+        <div class="flex flex-wrap gap-1.5 mt-5">${pills(s.brands)}</div>
+        <button type="button" class="btn bg-haldi text-ink hover:bg-paper mt-6" data-pick="${s.id}">${esc(t('pkg.cta'))}</button>
+      </article>`
+      )
+      .join('');
+
+    $('#faqList').innerHTML = I18N.faqs()
+      .map(
+        ([q, a], i) => `
+      <div class="faq-item">
+        <button type="button" data-faq aria-expanded="false" aria-controls="faq${i}"><span>${esc(q)}</span><span class="faq-plus" aria-hidden="true">+</span></button>
+        <div class="faq-body" id="faq${i}"><p>${esc(a)}</p></div>
+      </div>`
+      )
+      .join('');
+  }
 
   // ---------- Inquiry form ----------
   const form = $('#inquiryForm');
   const pkgSelect = $('#packageSelect');
   const typeSelect = $('#eventTypeSelect');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  let planned = null; // what the visitor chose in the planner, shown above the form
 
   // Option values stay English (the admin panel and WhatsApp message read them); labels are localised.
   function renderSelects() {
@@ -321,9 +235,9 @@
     pkgSelect.innerHTML =
       `<option value="">${esc(t('f.selectPkg'))}</option>` +
       `<optgroup label="${esc(t('f.optRental'))}">` +
-      AD.packages.map(I18N.pkg).map((p) => `<option value="${p.id}">${esc(p.name)} — ${esc(priceRange(p))} ${esc(t('perDay'))}</option>`).join('') +
+      AD.packages.map(I18N.pkg).map((p) => `<option value="${p.id}">${esc(p.name)} — ${esc(p.capacity)}</option>`).join('') +
       `</optgroup><optgroup label="${esc(t('f.optIntl'))}">` +
-      AD.services.map(I18N.svc).map((s) => `<option value="${s.id}">${esc(s.name)} — $${s.rates.USD} USD / $${s.rates.CAD} CAD</option>`).join('') +
+      AD.services.map(I18N.svc).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('') +
       `</optgroup><option value="custom">${esc(t('f.optCustom'))}</option>`;
     const labels = I18N.eventTypes();
     typeSelect.innerHTML = AD.eventTypes.map((v, i) => `<option value="${esc(v)}">${esc(labels[i] || v)}</option>`).join('');
@@ -332,24 +246,44 @@
   }
   form.eventDate.min = todayISO();
 
-  function goToForm() {
-    scrollTo($('#inquiry'));
-    setTimeout(() => form.name.focus({ preventScroll: true }), 1100);
+  // Suggest a rig from the crowd size typed in the form (and pre-select it if a rental is chosen or nothing is).
+  function recommend() {
+    const n = parseInt(form.guests.value, 10);
+    const hint = $('#recoHint');
+    if (!n || n < 1) {
+      hint.classList.add('hidden');
+      return;
+    }
+    const base = rigFor(n);
+    hint.textContent = '💡 ' + t('f.reco', { name: I18N.pkg(base).name });
+    hint.classList.remove('hidden');
+    if (!pkgSelect.value || AD.packages.some((p) => p.id === pkgSelect.value)) pkgSelect.value = base.id;
+  }
+  form.guests.addEventListener('input', recommend);
+
+  function renderPlanSummary() {
+    const tag = $('#planSummary');
+    if (!planned) return tag.classList.add('hidden');
+    tag.innerHTML = `<span>🧭</span><span>${esc(t('plan.summary', { occ: t(OCCASIONS[planned.occasion].label).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&'), n: fmtNum(planned.guests), rig: I18N.pkg(rigFor(planned.guests)).name }))}</span>`;
+    tag.classList.remove('hidden');
   }
 
-  $('#estCta').addEventListener('click', () => {
-    const p = est.pick;
-    pkgSelect.value = p.packageId;
-    form.days.value = p.days;
-    form.guests.value = p.guests;
-    if (est.mode === 'intl') {
-      const names = AD.services.filter((s) => est.services.has(s.id)).map((s) => s.name);
-      if (names.length > 1 && !form.message.value) form.message.value = 'Interested in: ' + names.join(' + ');
-    }
-    goToForm();
-  });
+  function goToForm() {
+    scrollTo($('#inquiry'));
+    setTimeout(() => form.name.focus({ preventScroll: true }), 900);
+  }
 
   document.addEventListener('click', (e) => {
+    if (e.target.closest('#planGo')) {
+      planned = { occasion, guests };
+      pkgSelect.value = rigFor(guests).id;
+      typeSelect.value = OCCASIONS[occasion].eventType;
+      form.guests.value = guests;
+      recommend();
+      renderPlanSummary();
+      goToForm();
+      return;
+    }
     const pick = e.target.closest('[data-pick]');
     if (pick) {
       pkgSelect.value = pick.dataset.pick;
@@ -357,12 +291,13 @@
     }
     const v3d = e.target.closest('[data-view3d]');
     if (v3d) {
-      if (v3d.dataset.view3d !== current) showSetup(v3d.dataset.view3d);
-      scrollTo($('#visualizer'));
+      const key = VISUAL_TO_OCCASION[v3d.dataset.view3d] || 'navratri';
+      if (key !== occasion) selectOccasion(key);
+      scrollTo($('#occasions'));
     }
   });
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = $('#formError');
     const data = Object.fromEntries(new FormData(form).entries());
@@ -387,16 +322,27 @@
     const offering = findOffering(data.packageId);
     data.packageName = offering ? offering.name : 'Custom requirement';
     data.language = I18N.lang;
+    data.status = 'Pending';
 
-    const saved = Store.add(data);
-    if (!saved) {
-      err.textContent = t('err.save');
+    const label = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.textContent = t('f.sending');
+    try {
+      const saved = await ADCloud.inquiries.add(data);
+      form.reset();
+      form.days.value = 1;
+      planned = null;
+      renderPlanSummary();
+      $('#recoHint').classList.add('hidden');
+      showSuccess(saved);
+    } catch (ex) {
+      console.error(ex);
+      err.textContent = t(ADCloud.isCloud ? 'err.network' : 'err.save');
       err.classList.remove('hidden');
-      return;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = label;
     }
-    form.reset();
-    form.days.value = 1;
-    showSuccess(saved);
   });
 
   function showSuccess(inq) {
@@ -430,11 +376,13 @@
   function renderLocalised() {
     renderCatalog();
     renderSelects();
-    renderEstimatorChips();
-    renderEstimate();
-    renderVizInfo();
+    renderStageText();
+    renderReco();
+    renderPlanSummary();
     setPlayLabel();
+    recommend();
   }
+  setGuests(guests);
   renderLocalised();
   I18N.onChange(renderLocalised);
 })();
